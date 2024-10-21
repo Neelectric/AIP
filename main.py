@@ -40,15 +40,19 @@ model = AutoModelForCausalLM.from_pretrained(
 tokenizer.pad_token = tokenizer.eos_token
 model.generation_config.pad_token_id = tokenizer.pad_token_id
 
+start_prompt = input("What would you like to talk about?")
+if start_prompt == " ":
+   start_prompt = "Please tell me about George street."
+   
 
 messages = [
   {"role": "system", "content": "You are a chatbot that is incredibly knowledgeable about Scotland."},
-  {"role": "user", "content": "Tell me about George street?"}
+  {"role": "user", "content": start_prompt}
 ]
 
-input = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-input_ids = tokenizer(input, return_tensors='pt').to("mps")
-max_new_tokens = 25
+input_messages = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+input_ids = tokenizer(input_messages, return_tensors='pt').to("mps")
+max_new_tokens = 50
 
 def time_it(func):
     time_before = time.time()
@@ -78,11 +82,19 @@ def manual():
   attention_mask = input_ids["attention_mask"]
   initial_prompt_length = output_ids.shape[-1]
   attention_mask_dummy = torch.tensor([[1]]).to(device)
-  for _ in range(max_new_tokens):
-      output_ids = model.generate(input_ids=output_ids, attention_mask=attention_mask, max_new_tokens=1, do_sample=False, temperature=None, top_p=None)
-      print(tokenizer.decode(output_ids[0][initial_prompt_length:], skip_special_tokens=True))
-      # print("-" * 200)
-      attention_mask = torch.cat((attention_mask, attention_mask_dummy), dim=1)
+  for i in range(max_new_tokens):
+      if i % 10 == 7:
+         input_text = input("(Please add enter what you believe should come next:)")
+         tokenixed_input_text = tokenizer.encode(input_text, return_tensors="pt", add_special_tokens=False).to(device)
+         output_ids = torch.cat((output_ids, tokenixed_input_text), dim=1)
+         attention_mask_additions = torch.ones(1, tokenixed_input_text.shape[-1]).to(dtype=torch.int64, device=device)
+         attention_mask = torch.cat((attention_mask, attention_mask_additions), dim=1)
+      else:
+        output_ids = model.generate(input_ids=output_ids, attention_mask=attention_mask, max_new_tokens=1, do_sample=False, temperature=None, top_p=None)
+        print(tokenizer.decode(output_ids[0][initial_prompt_length:], skip_special_tokens=True))
+        attention_mask = torch.cat((attention_mask, attention_mask_dummy), dim=1)
+      
+
 
 
 
