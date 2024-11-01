@@ -42,6 +42,7 @@ model = AutoModelForCausalLM.from_pretrained(
     attn_implementation="eager",)
 tokenizer.pad_token = tokenizer.eos_token
 model.generation_config.pad_token_id = tokenizer.pad_token_id
+model.generation_config.return_dict_in_generate = True
 
 system_prompt = "You are a chatbot that is incredibly knowledgeable about Scotland."
 print(f"System prompt: {system_prompt}")
@@ -87,7 +88,16 @@ def manual():
   for i in range(max_new_tokens):
       if i % 10 == 7:
          num_tokens_so_far = output_ids.shape[-1]
-         temp = model.generate(input_ids=output_ids, attention_mask=attention_mask, max_new_tokens=1, num_return_sequences=num_choices, do_sample=False, temperature=None, top_p=None, num_beams=num_choices)
+         temp = model.generate(
+            input_ids=output_ids, 
+            attention_mask=attention_mask, 
+            max_new_tokens=1, 
+            num_return_sequences=num_choices, 
+            do_sample=False, 
+            temperature=None, 
+            top_p=None, 
+            num_beams=num_choices
+            )
          options = []
          print("-"*100)
          for i, completion in enumerate(temp):
@@ -102,7 +112,14 @@ def manual():
          attention_mask_additions = torch.ones(1, tokenixed_input_text.shape[-1]).to(dtype=torch.int64, device=device)
          attention_mask = torch.cat((attention_mask, attention_mask_additions), dim=1)
       else:
-        output_ids = model.generate(input_ids=output_ids, attention_mask=attention_mask, max_new_tokens=1, do_sample=False, temperature=None, top_p=None)
+        output_ids = model.generate(
+           input_ids=output_ids, 
+           attention_mask=attention_mask, 
+           max_new_tokens=1, 
+           do_sample=False, 
+           temperature=None, 
+           top_p=None
+           ) # is now of type GenerateDecoderOnlyOutput
         print(tokenizer.decode(output_ids[0][initial_prompt_length:], skip_special_tokens=True))
         attention_mask = torch.cat((attention_mask, attention_mask_dummy), dim=1)
       
