@@ -62,9 +62,9 @@ messages = [
 input_messages = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
 input_ids = tokenizer(input_messages, return_tensors='pt').to("mps")
 
-def time_it(func, input_ids=input_ids):
+def time_it(func):
     time_before = time.time()
-    func(input_ids=input_ids)
+    func()
     time_after = time.time()
     time_taken = time_after - time_before
     toks_per_s = max_new_tokens / time_taken
@@ -72,79 +72,70 @@ def time_it(func, input_ids=input_ids):
     return
 
 ### THE FOLLOWING IS A WAY TO GET TEXT STREAMING TO WORK
-# def stream(input_ids=input_ids):
-#   streamer = TextStreamer(tokenizer, skip_prompt=True)
-#   output = model.generate(**input_ids, streamer=streamer,
-#                               pad_token_id=tokenizer.eos_token_id, 
-#                               # max_length=2048, 
-#                               max_new_tokens=max_new_tokens,
-#                               temperature=0.000001,
-#                               # top_p=0.8,
-#                               # repetition_penalty=1.25
-#                               )
-#   return output
+def stream():
+  streamer = TextStreamer(tokenizer, skip_prompt=True)
+  _ = model.generate(**input_ids, streamer=streamer,
+                              pad_token_id=tokenizer.eos_token_id, 
+                              # max_length=2048, 
+                              max_new_tokens=max_new_tokens,
+                              temperature=0.000001,
+                              # top_p=0.8,
+                              # repetition_penalty=1.25
+                              )
 
-def manual(input_ids=input_ids):
+def manual():
   output_ids = input_ids["input_ids"]
   attention_mask = input_ids["attention_mask"]
   initial_prompt_length = output_ids.shape[-1]
   attention_mask_dummy = torch.tensor([[1]]).to(device)
   for i in range(max_new_tokens):
       if i % 10 == 7:
-        num_tokens_so_far = output_ids.shape[-1]
-        generate_decoder_only_output = model.generate(
+         num_tokens_so_far = output_ids.shape[-1]
+         temp = model.generate(
             input_ids=output_ids, 
             attention_mask=attention_mask, 
             max_new_tokens=1, 
+            num_return_sequences=num_choices, 
             do_sample=False, 
             temperature=None, 
-            top_p=None
-        ) # is now of type GenerateDecoderOnlyOutput
-        output_ids = generate_decoder_only_output["sequences"]
-        scores = generate_decoder_only_output["scores"][0]
-        probs = torch.nn.functional.softmax(scores, dim=-1)
-        topk, indices = torch.topk(probs, k=num_choices, dim=-1)
-        print("-"*100)
-        for prob, index in zip(topk, indices):
-           print(prob, index)
-        print("-"*100)
-
-        # options = []
-        # print("-"*100)
-        # for i, completion in enumerate(temp):
-        #     last_bit = tokenizer.decode(completion[num_tokens_so_far:], skip_special_tokens=True)
-        #     print(i+1, last_bit)
-        #     options.append(last_bit)
-        # print("-"*100)
-        input_text = input("'Please add enter the number of the token you believe should come next:' ")
-        choice = indices[int(input_text)-1]
-        tokenixed_input_text = tokenizer.encode(choice, return_tensors="pt", add_special_tokens=False).to(device)
-        output_ids = torch.cat((output_ids, tokenixed_input_text), dim=1)
-        attention_mask_additions = torch.ones(1, tokenixed_input_text.shape[-1]).to(dtype=torch.int64, device=device)
-        attention_mask = torch.cat((attention_mask, attention_mask_additions), dim=1)
+            top_p=None, 
+            num_beams=num_choices
+            )
+         options = []
+         print("-"*100)
+         for i, completion in enumerate(temp):
+            last_bit = tokenizer.decode(completion[num_tokens_so_far:], skip_special_tokens=True)
+            print(i+1, last_bit)
+            options.append(last_bit)
+         print("-"*100)
+         input_text = input("'Please add enter the number of the token you believe should come next:' ")
+         choice = options[int(input_text)-1]
+         tokenixed_input_text = tokenizer.encode(choice, return_tensors="pt", add_special_tokens=False).to(device)
+         output_ids = torch.cat((output_ids, tokenixed_input_text), dim=1)
+         attention_mask_additions = torch.ones(1, tokenixed_input_text.shape[-1]).to(dtype=torch.int64, device=device)
+         attention_mask = torch.cat((attention_mask, attention_mask_additions), dim=1)
       else:
         generate_decoder_only_output = model.generate(
-            input_ids=output_ids, 
-            attention_mask=attention_mask, 
-            max_new_tokens=1, 
-            do_sample=False, 
-            temperature=None, 
-            top_p=None
-        ) # is now of type GenerateDecoderOnlyOutput
+           input_ids=output_ids, 
+           attention_mask=attention_mask, 
+           max_new_tokens=1, 
+           do_sample=False, 
+           temperature=None, 
+           top_p=None
+           ) # is now of type GenerateDecoderOnlyOutput
         output_ids = generate_decoder_only_output["sequences"]
         scores = generate_decoder_only_output["scores"][0]
         probs = torch.nn.functional.softmax(scores, dim=-1)
         topk, indices = torch.topk(probs, k=num_choices, dim=-1)
-        
-        # print(tokenizer.decode(output_ids[0][initial_prompt_length:], skip_special_tokens=True))
-        attention_mask = torch.ones(1, input_ids.shape[-1], dtype=torch.int64)
-
+      #    i really just need to do topk, indices = torch.topk(scores, dim=-1)
+        print(tokenizer.decode(output_ids[0][initial_prompt_length:], skip_special_tokens=True))
+        attention_mask = torch.cat((attention_mask, attention_mask_dummy), dim=1)
       
-# print("'First, we see what Llama3.1 8b instruct comes up with all on its own.'")
-# time_it(stream, input_ids=input_ids)
+print("'First, we see what Llama3.1 8b instruct comes up with all on its own.'")
+time_it(stream)
 
 print("'This time we steer every 10 tokens, starting from the 7th (arbitrarily)'")
-time_it(manual, input_ids=input_ids)
+time_it(manual)
 
 
 # output = tokenizer.decode(input_ids[0], skip_special_tokens=True)
