@@ -43,6 +43,8 @@ model = AutoModelForCausalLM.from_pretrained(
 tokenizer.pad_token = tokenizer.eos_token
 model.generation_config.pad_token_id = tokenizer.pad_token_id
 model.generation_config.return_dict_in_generate = True
+model.generation_config.output_scores = True
+model.generation_config.output_logits = True
 
 system_prompt = "You are a chatbot that is incredibly knowledgeable about Scotland."
 print(f"System prompt: {system_prompt}")
