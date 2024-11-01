@@ -86,11 +86,12 @@ def time_it(func, inputs=inputs):
 #   return output
 
 def manual(inputs=inputs):
+  # prepare the input before we start iterating
   input_ids = inputs["input_ids"]
   num_tokens_input = input_ids.shape[-1]
   attention_mask = inputs["attention_mask"]
-  initial_prompt_length = input_ids.shape[-1]
-  attention_mask_dummy = torch.tensor([[1]]).to(device)
+
+  # generate a token at a time
   for i in range(max_new_tokens):
     generate_decoder_only_output = model.generate(
         input_ids=input_ids, 
@@ -100,13 +101,17 @@ def manual(inputs=inputs):
         temperature=None, 
         top_p=None
     ) # is now of type GenerateDecoderOnlyOutput
+
+    # softmax the scores and find the topk tokens with their probabilities
     output_ids = generate_decoder_only_output["sequences"]
     scores = generate_decoder_only_output["scores"][0]
     probs = torch.nn.functional.softmax(scores, dim=-1)
     topk, indices = torch.topk(probs, k=num_choices, dim=-1)
     topk = torch.squeeze(topk).tolist()
     indices = torch.squeeze(indices)
-    if i % 10 == 7 or topk[0] < 0.4: 
+
+    # if highest probability is below 40% we branch
+    if topk[0] < 0.4: 
       print("-"*100)
       for i, pair in enumerate(zip(topk, indices)):
           prob, index = pair
