@@ -132,10 +132,6 @@ def manual(inputs=inputs):
     detokenized_current_text = tokenizer.decode(input_ids.squeeze()[num_tokens_input:])
     print(detokenized_current_text)
 
-       
-
-
-      
 # print("'First, we see what Llama3.1 8b instruct comes up with all on its own.'")
 # time_it(stream, input_ids=input_ids)
 
