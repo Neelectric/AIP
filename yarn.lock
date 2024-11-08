@@ -301,7 +301,7 @@
 
 ai@^3.4.33:
   version "3.4.33"
-  resolved "https://registry.npmjs.org/ai/-/ai-3.4.33.tgz"
+  resolved "https://registry.yarnpkg.com/ai/-/ai-3.4.33.tgz#b52ac6a7def6972bb5edaf1867ffc13526b8d51d"
   integrity sha512-plBlrVZKwPoRTmM8+D1sJac9Bq8eaa2jiZlHLZIWekKWI1yMWYZvCCEezY9ASPwRhULYDJB2VhKOBUUeg3S5JQ==
   dependencies:
     "@ai-sdk/provider" "0.0.26"

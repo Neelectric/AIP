@@ -68,7 +68,8 @@ async def ask(question: Question):
 
     return StreamingResponse(
         generator(question.prompt),
-        media_type='text/event-stream')
+        media_type='text/event-stream'
+        )
 
 
 @app.get("/api/reply")
