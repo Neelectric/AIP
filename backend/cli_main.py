@@ -31,7 +31,7 @@ print(f"using device {device}")
 # Load model directly
 
 model_id = "meta-llama/Llama-3.1-8B-Instruct"
-"Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
+# "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
 max_new_tokens = 50
 num_choices = 5
 
@@ -61,7 +61,7 @@ messages = [
 ]
 
 input_messages = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-inputs = tokenizer(input_messages, return_tensors='pt').to("mps")
+inputs = tokenizer(input_messages, return_tensors='pt').to(device)
 
 def time_it(func, inputs=inputs):
     time_before = time.time()

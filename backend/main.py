@@ -1,8 +1,16 @@
+# Main driver file to prompt our model
+# System imports
+import time
 import subprocess
+from os import getenv, path
+from threading import Thread
+
+# External imports
+import torch
+from tqdm import tqdm
+from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer, TextIteratorStreamer
 from pydantic import BaseModel
 import uvicorn
-
-from os import getenv, path
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request
@@ -13,19 +21,77 @@ from fastapi.staticfiles import StaticFiles
 # from langchain.llms.openai import OpenAI
 from langchain_ollama import OllamaLLM
 
+# Local imports
+
+
+# Environment prep
+# attempt to auto recognize the device!
+device = "cpu"
+if torch.cuda.is_available(): device = "cuda"
+elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available(): device = "mps"
+print(f"using device {device}")
+
+# prepare environment variables
 app_base = path.dirname(__file__)
 app_root = path.join(app_base, '../')
 # app_public = path.join(app_base, "public/")
 app_public = path.join(app_root, "frontend/public")
-
 load_dotenv(dotenv_path=path.join(app_root, '.env'))
-
 app_env = getenv("APP_ENVIRONMENT")
 app_host = getenv("APP_HTTP_HOST")
 app_port = int(getenv("APP_HTTP_PORT"))
 app_spa_folder = path.join(app_root, getenv("APP_SPA_FOLDER_ROOT"))
 app_spa_proxy_url = getenv("APP_SPA_PROXY_URL")
 app_spa_proxy_launch_cmd = getenv("APP_SPA_PROXY_LAUNCH_CMD")
+# -----------------------------------------------------------------------------------------------------------
+
+
+#load the model 
+model_id = "meta-llama/Llama-3.1-8B-Instruct"
+# "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
+max_new_tokens = 50
+num_choices = 5
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    device_map=device,
+    attn_implementation="eager",
+    load_in_4bit=True)
+tokenizer.pad_token = tokenizer.eos_token
+model.generation_config.pad_token_id = tokenizer.pad_token_id
+model.generation_config.return_dict_in_generate = True
+model.generation_config.output_scores = True
+model.generation_config.output_logits = True
+model.generation_config.do_sample = False
+system_prompt = "You are a chatbot that is incredibly knowledgeable about Scotland."
+streamer = TextIteratorStreamer(
+    tokenizer, 
+    skip_prompt=True, 
+    decode_kwargs=dict(skip_special_tokens = True)
+    )
+
+chat_history = []
+
+# <OLD LLM LANGCHAIN CODE>
+# llm = OpenAI(
+#     streaming=True,
+#     verbose=True,
+#     temperature=0,
+#     openai_api_key=getenv("OPENAI_API_KEY")
+# )
+
+# llm = OllamaLLM(
+#     model="llama3.1",
+#     streaming=True,
+#     verbose=True,
+#     temperature=0.001,
+#     )
+
+# response = llm.invoke("The first man on the moon was ...")
+# print(response)
+# </OLD LLM LANGCHAIN CODE>
+
 
 # APP_SPA_PROXY_LAUNCH_CMD
 class Question(BaseModel):
@@ -36,35 +102,37 @@ app = FastAPI()
 templates = Jinja2Templates(directory=app_public)
 app.mount("/public", StaticFiles(directory=app_public), name="public")
 
-# llm = OpenAI(
-#     streaming=True,
-#     verbose=True,
-#     temperature=0,
-#     openai_api_key=getenv("OPENAI_API_KEY")
-# )
-
-llm = OllamaLLM(
-    model="llama3.1",
-    streaming=True,
-    verbose=True,
-    temperature=0,
-    )
-
-response = llm.invoke("The first man on the moon was ...")
-print(response)
-
 
 @app.post('/api/ask')
-async def ask(question: Question):
-    print(question)
+async def ask(question: Question, chat_history=chat_history):
+    # print(question)
+    def generator(prompt: str, chat_history=chat_history):
+        messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": question}
+        ]
+        input_messages = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+        inputs = tokenizer(input_messages, return_tensors='pt').to(device)
+        generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1000)
+        thread = Thread(target=model.generate, kwargs=generation_kwargs)
+        thread.start()
+        generated_text = ""
+        for new_text in streamer:
+            generated_text += new_text
+            yield new_text
+        # print(generated_text)
+        chat_history += generated_text
+        print(chat_history)
 
-    def generator(prompt: str):
-        for item in llm.stream(prompt):
-            print(item)
-            # stream to second ipad()
-            # if item needs branching:
-            # 
-            yield item
+
+    
+
+    # <OLD LLM LANGCHAIN CODE>
+    # def generator(prompt: str):
+    #     for item in llm.stream(prompt):
+    #         yield item
+    # </OLD LLM LANGCHAIN CODE>
+
 
     return StreamingResponse(
         generator(question.prompt),
