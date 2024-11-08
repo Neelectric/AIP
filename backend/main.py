@@ -52,7 +52,9 @@ model_id = "meta-llama/Llama-3.1-8B-Instruct"
 max_new_tokens = 50
 num_choices = 5
 
-tokenizer = AutoTokenizer.from_pretrained(model_id)
+tokenizer = AutoTokenizer.from_pretrained(
+    model_id,
+    )
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
     device_map=device,
@@ -104,8 +106,9 @@ app.mount("/public", StaticFiles(directory=app_public), name="public")
 
 
 @app.post('/api/ask')
-async def ask(question: Question, chat_history=chat_history):
+async def ask(question: Question,):
     # print(question)
+    chat_history = []
     def generator(prompt: str, chat_history=chat_history):
         messages = [
         {"role": "system", "content": system_prompt},
@@ -118,7 +121,10 @@ async def ask(question: Question, chat_history=chat_history):
         thread.start()
         generated_text = ""
         for new_text in streamer:
+            print(new_text)
             generated_text += new_text
+            if "<|eot_id|>" in new_text:
+                new_text = new_text.replace("<|eot_id|>", "")
             yield new_text
         # print(generated_text)
         chat_history += generated_text
