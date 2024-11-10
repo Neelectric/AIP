@@ -1,15 +1,14 @@
-import React from 'react';
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useCompletion } from "ai/react";
 
+
 function App() {
+  // Send the query to the LLM server and stream its response
   const [completion, setCompletion] = useState("");
 
   const { input, handleInputChange, handleSubmit } = useCompletion({
     api: "/api/ask",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers: { "Content-Type": "application/json" },
     onResponse: (response: Response) => {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -30,27 +29,46 @@ function App() {
 
       readStream();
     },
+    onError: (error: Error) => {
+      setCompletion(error.toString());
+    }
   });
 
+  
+  // For easy testing of the FastAPI implementation - simply import axios and print `message` somewhere in the UI to check
+  // const [message, setMessage] = useState<string>("");
+  // useEffect(() => {
+  //     axios.get("/api/")
+  //         .then(response => setMessage(response.data.message))
+  //         .catch(error => console.error("Error fetching data", error));
+  // }, []);
+
+
+  // Render the interface
   return (
     <div className="flex flex-col items-center justify-center h-screen">
       <textarea
         value={completion}
         rows={20}
         cols={100}
-        className="w-3/4 mb-4 p-4 bg-gray-800 text-white rounded-md"
-      ></textarea>
-      <form onSubmit={handleSubmit} className="w-3/4">
-        <input style={{ width:"760px" }}
+        readOnly
+        className="w-3/4 mb-4 p-4 border-2 border-black rounded-md"
+      >
+      </textarea>
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-3/4"
+      >
+        <input
           id="ask-input"
           type="text"
           value={input}
           onChange={handleInputChange}
-          className="w-full p-4 bg-gray-800 text-white rounded-md mb-4"
+          className="grow mr-2 p-4 border-2 border-black rounded-md"
         />
         <button
           type="submit"
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+          className="w-20 bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded"
         >
           ASK
         </button>

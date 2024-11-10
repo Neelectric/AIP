@@ -1,24 +1,10 @@
 # Main driver file to prompt our model
 # System imports
 import time
-import os
 
 # External imports
 import torch
-from tqdm import tqdm
-from transformers import AutoTokenizer, AutoModelForCausalLM, TextStreamer
-
-# Local imports
-# from arithmetic_pretrained_transformer import APT, APTConfig, DataLoaderLite
-# from apt_tokenizer import APTTokenizer
-
-# Environment prep
-# torch.manual_seed(42)
-# torch.cuda.manual_seed(42)
-# torch.mps.manual_seed(42)
-# torch.set_printoptions(sci_mode=False)
-# from torch.utils.tensorboard import SummaryWriter
-# writer = SummaryWriter()
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 # ------------------------------------------TRAINING-----------------------------------------------------------
 # attempt to auto recognize the device!
@@ -29,7 +15,6 @@ print(f"using device {device}")
 
 
 # Load model directly
-
 model_id = "meta-llama/Llama-3.1-8B-Instruct"
 # "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
 max_new_tokens = 50
@@ -39,7 +24,9 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_pretrained(
     model_id,
     device_map=device,
-    attn_implementation="eager",)
+    attn_implementation="eager",
+    load_in_4bit=True
+)
 tokenizer.pad_token = tokenizer.eos_token
 model.generation_config.pad_token_id = tokenizer.pad_token_id
 model.generation_config.return_dict_in_generate = True
