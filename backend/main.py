@@ -33,7 +33,6 @@ api_http_port=int(getenv("API_HTTP_PORT"))
 api_http_url=getenv("API_HTTP_URL")
 
 ui_folder_root=getenv("UI_FOLDER_ROOT")
-ui_proxy_url = getenv("UI_PROXY_URL")
 ui_proxy_launch_cmd = getenv("UI_PROXY_LAUNCH_CMD")
 
 app_frontend_path = path.join(app_root_path, ui_folder_root)
