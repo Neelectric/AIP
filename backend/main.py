@@ -28,6 +28,7 @@ app_base_path = path.dirname(__file__)
 app_root_path = path.join(app_base_path, '../')
 load_dotenv(dotenv_path=path.join(app_root_path, '.env'))
 
+server_http_host=getenv("SERVER_HTTP_HOST")
 api_http_port=int(getenv("API_HTTP_PORT"))
 api_http_url=getenv("API_HTTP_URL")
 
@@ -121,5 +122,5 @@ if __name__ == "__main__":
         cwd=app_frontend_path
     )
     # Launch the backend server
-    # Uvicorn is a server programme that runs the 'app' object in 'main.py' (here), on 127.0.0.1:5000
-    uvicorn.run("main:app", host="127.0.0.1", port=5000)
+    # Uvicorn is a server programme that runs the 'app' object in 'main.py' (here)
+    uvicorn.run("main:app", host=server_http_host, port=api_http_port)
