@@ -164,3 +164,6 @@ cython_debug/
 /aip/
 pyvenv.cfg
 .webui_secret_key
+/node_modules/
+package-lock.json
+package.json

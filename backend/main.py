@@ -91,6 +91,68 @@ def generator(prompt: str, chat_history=chat_history):
     chat_history += generated_text
     # print(chat_history)
 
+def generator_dynamic(prompt: str, chat_history=chat_history):
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": prompt}
+    ]
+    input_messages = tokenizer.apply_chat_template(
+        messages, 
+        add_generation_prompt=True,
+        tokenize=False
+        )
+    inputs = tokenizer(input_messages, return_tensors='pt').to(device)
+
+    input_ids = inputs["input_ids"]
+    num_tokens_input = input_ids.shape[-1]
+    attention_mask = inputs["attention_mask"]
+
+    # generate a token at a time
+    for i in range(max_new_tokens):
+        generate_decoder_only_output = model.generate(
+            input_ids=input_ids, 
+            attention_mask=attention_mask, 
+            max_new_tokens=1, 
+            do_sample=False, 
+            temperature=None, 
+            top_p=None
+        ) # is now of type GenerateDecoderOnlyOutput
+
+        # softmax the scores and find the topk tokens with their probabilities
+        output_ids = generate_decoder_only_output["sequences"]
+        scores = generate_decoder_only_output["scores"][0]
+        probs = torch.nn.functional.softmax(scores, dim=-1)
+        topk, indices = torch.topk(probs, k=num_choices, dim=-1)
+        topk = torch.squeeze(topk).tolist()
+        indices = torch.squeeze(indices)
+
+        # if highest probability is below 40% we branch
+        if topk[0] < 0.4: 
+            print("-"*100)
+            for i, pair in enumerate(zip(topk, indices)):
+                prob, index = pair
+                detokenized = tokenizer.decode(index, skip_special_tokens=True)
+                prob*=100
+                print(f"{i+1}, {prob:.2f}%, {int(index)}, {detokenized}") #     
+            print("-"*100)
+            input_text = input("'Please add enter the number of the token you believe should come next:' ")
+            choice_index = int(input_text)-1
+            choice = indices[choice_index]
+
+        else:
+            choice = indices[0]
+        choice = choice.unsqueeze(dim=0).unsqueeze(dim=0) # this is quite ugly but we effectively need it to have shape [1,1]
+        input_ids = torch.cat((input_ids, choice), dim=1)
+        attention_mask = torch.ones(1, input_ids.shape[-1]).to(device)
+        detokenized_current_text = tokenizer.decode(input_ids.squeeze()[num_tokens_input:])
+        print(tokenizer.decode(int(choice)))
+        yield tokenizer.decode(int(choice))
+
+    #     if "<|eot_id|>" in new_text:
+    #         new_text = new_text.replace("<|eot_id|>", "")
+    #     yield new_text
+    # chat_history += generated_text
+
 
 # Launch the app
 class Question(BaseModel):
@@ -108,7 +170,7 @@ async def root():
 async def ask(question: Question):
     # print(question)
     return StreamingResponse(
-        generator(question.prompt),
+        generator_dynamic(question.prompt),
         media_type='text/event-stream'
     )
 
