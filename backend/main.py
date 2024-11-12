@@ -42,8 +42,8 @@ app_frontend_path = path.join(app_root_path, ui_folder_root)
 # Load the model
 model_id = "meta-llama/Llama-3.1-8B-Instruct"
 #model_id = "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
-max_new_tokens = 50
-num_choices = 5
+max_new_tokens = 600
+num_choices = 7
 
 tokenizer = AutoTokenizer.from_pretrained(
     model_id
@@ -68,28 +68,8 @@ streamer = TextIteratorStreamer(
 )
 
 chat_history = []
-system_prompt = "You are a chatbot that is incredibly knowledgeable about Scotland."
+system_prompt = "You are a chatbot simulating a resident of Leith, in Scotland. In recent years the demand for housing increased immensely in the whole city, as well as Leith. As a result, rent prices shot up immensely, and many landlords forced tenants out of their flats to capitalize on new rental contracts with higher rates. You and many close friends of your community lost your long-term homes and had to resettle to other parts of the city were you were still able to afford rent. You are incredibly bitter and sad about this development, and have strong opinions about people who have taken your old flat and the landlords who forced you out."
 
-def generator(prompt: str, chat_history=chat_history):
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": prompt}
-    ]
-    input_messages = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-    inputs = tokenizer(input_messages, return_tensors='pt').to(device)
-    generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1000)
-    thread = Thread(target=model.generate, kwargs=generation_kwargs)
-    thread.start()
-    generated_text = ""
-    for new_text in streamer:
-        print(new_text)
-        generated_text += new_text
-        if "<|eot_id|>" in new_text:
-            new_text = new_text.replace("<|eot_id|>", "")
-        yield new_text
-    # print(generated_text)
-    chat_history += generated_text
-    # print(chat_history)
 
 def generator_dynamic(prompt: str, chat_history=chat_history):
     messages = [
@@ -127,7 +107,7 @@ def generator_dynamic(prompt: str, chat_history=chat_history):
         indices = torch.squeeze(indices)
 
         # if highest probability is below 40% we branch
-        if topk[0] < 0.4: 
+        if topk[0] < 0.3: 
             print("-"*100)
             for i, pair in enumerate(zip(topk, indices)):
                 prob, index = pair
