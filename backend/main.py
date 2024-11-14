@@ -11,7 +11,7 @@ import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from pydantic import BaseModel
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 import uvicorn
 
@@ -32,7 +32,7 @@ server_http_host=getenv("SERVER_HTTP_HOST")
 api_http_port=int(getenv("API_HTTP_PORT"))
 api_http_url=getenv("API_HTTP_URL")
 
-ui_folder_root=getenv("UI_FOLDER_ROOT")
+ui_folder_root="frontend"
 ui_proxy_launch_cmd = getenv("UI_PROXY_LAUNCH_CMD")
 
 app_frontend_path = path.join(app_root_path, ui_folder_root)
@@ -68,7 +68,31 @@ streamer = TextIteratorStreamer(
 )
 
 chat_history = []
-system_prompt = "You are a chatbot simulating a resident of Leith, in Scotland. In recent years the demand for housing increased immensely in the whole city, as well as Leith. As a result, rent prices shot up immensely, and many landlords forced tenants out of their flats to capitalize on new rental contracts with higher rates. You and many close friends of your community lost your long-term homes and had to resettle to other parts of the city were you were still able to afford rent. You are incredibly bitter and sad about this development, and have strong opinions about people who have taken your old flat and the landlords who forced you out."
+#system_prompt = "You are a chatbot simulating a resident of Leith, in Scotland. In recent years the demand for housing increased immensely in the whole city, as well as Leith. As a result, rent prices shot up immensely, and many landlords forced tenants out of their flats to capitalize on new rental contracts with higher rates. You and many close friends of your community lost your long-term homes and had to resettle to other parts of the city were you were still able to afford rent. You are incredibly bitter and sad about this development, and have strong opinions about people who have taken your old flat and the landlords who forced you out."
+system_prompt = "You are a chatbot very knowledgeable about Edinburgh, giving responses in no more than one sentence."
+
+
+def generator(prompt: str, chat_history=chat_history):
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": prompt}
+    ]
+    input_messages = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+    inputs = tokenizer(input_messages, return_tensors='pt').to(device)
+    generation_kwargs = dict(inputs, streamer=streamer, max_new_tokens=1000)
+    thread = Thread(target=model.generate, kwargs=generation_kwargs)
+    thread.start()
+    generated_text = ""
+    for new_text in streamer:
+        print(new_text)
+        if "<|eot_id|>" in new_text:
+            new_text = new_text.replace("<|eot_id|>", "")
+        generated_text += new_text
+        # yield new_text
+    return generated_text
+    # print(generated_text)
+    # chat_history += generated_text
+    # print(chat_history)
 
 
 def generator_dynamic(prompt: str, chat_history=chat_history):
@@ -134,6 +158,28 @@ def generator_dynamic(prompt: str, chat_history=chat_history):
     # chat_history += generated_text
 
 
+# WebSocket connection manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+manager = ConnectionManager()
+
+
 # Launch the app
 class Question(BaseModel):
     prompt: str
@@ -153,6 +199,28 @@ async def ask(question: Question):
         generator_dynamic(question.prompt),
         media_type='text/event-stream'
     )
+
+# Route for testing websockets
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # await manager.send_personal_message(f"You asked: {data}", websocket)
+            await manager.broadcast(f"Client {client_id} asked: {data}")
+            reply = generator(data)
+            await manager.broadcast(reply)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        await manager.broadcast(f"Client {client_id} left the chat")
+# Single-socket connection
+# async def websocket_endpoint(websocket: WebSocket):
+#     await websocket.accept()
+#     while True:
+#         data = await websocket.receive_text()
+#         reply = generator(data)
+#         await websocket.send_text(reply)
 
 
 if __name__ == "__main__":
