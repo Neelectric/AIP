@@ -39,7 +39,7 @@ ui_proxy_launch_cmd = getenv("UI_PROXY_LAUNCH_CMD")
 
 app_frontend_path = path.join(app_root_path, ui_folder_root)
 
-llm = LLM(device)
+
 
 #------------- API ------------#
 # WebSocket connection manager
@@ -107,6 +107,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 #         data = await websocket.receive_text()
 #         reply = generator(data)
 #         await websocket.send_text(reply)
+
+@app.on_event("startup")
+def startup_event():
+    global llm
+    llm = LLM(device)
 
 
 if __name__ == "__main__":
