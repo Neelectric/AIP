@@ -1,5 +1,6 @@
 # Main driver file to prompt our model
 # System imports
+import asyncio
 import subprocess
 from os import getenv, path
 
@@ -58,7 +59,9 @@ class ConnectionManager:
 
     async def broadcast(self, message: str):
         for connection in self.active_connections:
-            await connection.send_text(message)
+            await connection.send_json(message)
+        # Return control to the event loop so that messages are broadcast individually
+        await asyncio.sleep(0)
 
 manager = ConnectionManager()
 
@@ -92,8 +95,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
             data = await websocket.receive_text()
             # await manager.send_personal_message(f"You asked: {data}", websocket)
             await manager.broadcast(f"Client {client_id} asked: {data}")
-            reply = llm.generator(data)
-            await manager.broadcast(reply)
+            await llm.generator(data, manager.broadcast)
+            # await manager.broadcast(reply)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast(f"Client {client_id} left the chat")

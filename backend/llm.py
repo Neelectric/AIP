@@ -42,7 +42,7 @@ class LLM:
 		)
 
 
-	def generator(self, prompt: str, chat_history=chat_history):
+	async def generator(self, prompt: str, broadcast):
 		messages = [
 			{"role": "system", "content": self.system_prompt},
 			{"role": "user", "content": prompt}
@@ -58,7 +58,8 @@ class LLM:
 			print(new_text)
 			if "<|eot_id|>" in new_text:
 				new_text = new_text.replace("<|eot_id|>", "")
-			generated_text += new_text
+			# generated_text += new_text
+			await broadcast(new_text)
 			# yield new_text
 		return generated_text
 		# print(generated_text)

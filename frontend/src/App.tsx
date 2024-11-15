@@ -59,6 +59,8 @@ function App() {
 
   useEffect(() => {
     ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
+    // ws.current = new WebSocket(`ws://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
+
     return () => {
       ws.current?.close();
     }
