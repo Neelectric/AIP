@@ -58,8 +58,7 @@ function App() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    ws.current = new WebSocket(`ws://localhost:5000/ws/${loc}`);
-
+    ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
     return () => {
       ws.current?.close();
     }
