@@ -1,8 +1,4 @@
 # Main driver file to prompt our model
-# System imports
-from threading import Thread
-
-# External imports
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 
@@ -12,9 +8,9 @@ class NeedHumanInputException(Exception):
 
 
 class LLM:
-	# model_id = "meta-llama/Llama-3.1-8B-Instruct"
-	#model_id = "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
-	model_id = "meta-llama/Llama-3.2-3B-Instruct"
+	model_id = "meta-llama/Llama-3.1-8B-Instruct"
+	# model_id = "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
+	# model_id = "meta-llama/Llama-3.2-3B-Instruct"
 	
 	max_new_tokens = 100
 	num_choices = 7
@@ -44,31 +40,6 @@ class LLM:
 			skip_prompt=True, 
 			decode_kwargs=dict(skip_special_tokens = True)
 		)
-
-
-	# async def generator(self, prompt: str, broadcast):
-	# 	messages = [
-	# 		{"role": "system", "content": self.system_prompt},
-	# 		{"role": "user", "content": prompt}
-	# 	]
-	# 	input_messages = self.tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-	# 	inputs = self.tokenizer(input_messages, return_tensors='pt').to(self.device)
-
-	# 	generation_kwargs = dict(inputs, streamer=self.streamer, max_new_tokens=1000)
-	# 	thread = Thread(target=self.model.generate, kwargs=generation_kwargs)
-	# 	thread.start()
-	# 	generated_text = ""
-	# 	for new_text in self.streamer:
-	# 		print(new_text)
-	# 		if "<|eot_id|>" in new_text:
-	# 			new_text = new_text.replace("<|eot_id|>", "")
-	# 		# generated_text += new_text
-	# 		await broadcast(new_text)
-	# 		# yield new_text
-	# 	return generated_text
-	# 	# print(generated_text)
-	# 	# chat_history += generated_text
-	# 	# print(chat_history)
 
 
 	async def start_game(self, prompt: str, broadcast):
@@ -126,15 +97,15 @@ class LLM:
 		topk = torch.squeeze(topk).tolist()
 		self.indices = torch.squeeze(indices)
 
-		# If highest probability is below 60% we branch
-		if topk[0] < 0.5:
+		# If highest probability is below 40% we branch
+		if topk[0] < 0.3:
 			# For each of the options, send the text, index, and probability back
 			# and save our progress in the game so we can pick up where we left off when we get input
 			choices = []
-			for i, pair in enumerate(zip(topk, indices)):
+			for i, pair in enumerate(zip(topk, self.indices)):
 				prob, index = pair
 				detokenized = self.tokenizer.decode(index, skip_special_tokens=True)
-				choices.append({ "i": i, "index": str(index), "prob": prob, "token": detokenized })
+				choices.append({ "i": i, "index": int(index), "prob": prob, "token": detokenized })
 			await broadcast({ "type": "inside_choice", "data": choices })
 			raise NeedHumanInputException
 		# Else just generate the next token

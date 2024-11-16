@@ -1,8 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
-// import { useCompletion } from "ai/react";
 
 
 type Loc = "outside" | "inside";
+
+type Data = {
+  type: string;
+  data: any;
+};
 
 // Figure out what our location is
 const params = new URLSearchParams(document.location.search);
@@ -10,48 +14,9 @@ const loc = params.get("loc") as Loc;
 
 
 function App() {
-  // For easy testing of the FastAPI implementation - simply import axios and print `message` somewhere in the UI to check
-  // const [message, setMessage] = useState<string>("");
-  // useEffect(() => {
-  //     axios.get("/api/")
-  //         .then(response => setMessage(response.data.message))
-  //         .catch(error => console.error("Error fetching data", error));
-  // }, []);
+  const responseCounter = useRef(0);
+  const prevToken = useRef("");
 
-
-  // Send the query to the LLM server and stream its response
-  // const [completion, setCompletion] = useState("");
-
-  // const { input, handleInputChange, handleSubmit } = useCompletion({
-  //   api: "/api/ask",
-  //   headers: { "Content-Type": "application/json" },
-  //   onResponse: (response: Response) => {
-  //     const reader = response.body?.getReader();
-  //     const decoder = new TextDecoder();
-  //     let currentCompletion = "";
-
-  //     const readStream = async () => {
-  //       if (!reader) return;
-  //       const { value, done } = await reader.read();
-  //       if (value) {
-  //         const chunk = decoder.decode(value);
-  //         currentCompletion += chunk;
-  //         setCompletion(currentCompletion);
-  //       }
-  //       if (!done) {
-  //         readStream();
-  //       }
-  //     };
-
-  //     readStream();
-  //   },
-  //   onError: (error: Error) => {
-  //     setCompletion(error.toString());
-  //   }
-  // });
-
-
-  // Set up WebSockets
   const [input, setInput] = useState("");
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => setInput(event.target.value);
 
@@ -69,11 +34,54 @@ function App() {
   useEffect(() => {
     if (!ws.current) return;
     ws.current.onmessage = event => {
+      const data = JSON.parse(event.data) as Data;
       const responses = document.getElementById("responses")!;
-      const response = document.createElement("li");
-      const content = document.createTextNode(event.data);
-      response.appendChild(content);
-      responses.appendChild(response);
+      
+      if(data.type === "prompt") {
+        const prompt = document.createElement("li");
+        const promptContent = document.createTextNode(`You: ${data.data}`);
+        prompt.appendChild(promptContent);
+        responses.appendChild(prompt);
+
+        responseCounter.current += 1;
+        const response = document.createElement("li");
+        response.setAttribute("id", `response-${responseCounter.current}`);
+        const responseContent = document.createTextNode(`EdinBot: `);
+        response.appendChild(responseContent);
+        responses.appendChild(response);
+      }
+      else if(data.type === "next_token") {
+        const response = document.getElementById(`response-${responseCounter.current}`);
+        if(!response) return;
+        
+        const token = data.data as string;
+        console.log(token);
+        if (token === "<|eot_id|>") {
+          responseCounter.current += 1;
+          const response = document.createElement("li");
+          response.setAttribute("id", `response-${responseCounter.current}`);
+          responses.appendChild(response);
+        }
+        else if (
+          token === "<|start_header_id|>" ||
+          token === "<|end_header_id|>" ||
+          (prevToken.current === "<|start_header_id|>" && token === "assistant")
+        ) {}
+        else {
+          for (const char of token) {
+            const content = document.createTextNode(char);
+            response.appendChild(content);
+          }
+        }
+
+        prevToken.current = token;
+      }
+      else if(data.type === "inside_choice") {
+        // const response = document.createElement("li");
+        // const content = document.createTextNode(event.data);
+        // response.appendChild(content);
+        // responses.appendChild(response);
+      }
     };
   });
   
@@ -86,19 +94,51 @@ function App() {
 
 
   // Render the interface
-  return (
+  return loc === "outside" ? (
+    <div className={`w-screen h-screen flex flex-col justify-center bg-[url("/editomorrow.webp")] bg-center bg-cover bg-no-repeat`}>
+      {/* <div>
+        Edinbot
+      </div> */}
+      <div className="h-full w-[70%] mx-auto mt-16 mb-32 backdrop-blur-3xl rounded-lg overflow-hidden shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff]">
+        <div className="w-full h-full flex flex-col items-center rounded-lg bg-white/70 border-0 border-white">
+          <div
+            id="output_window"
+            className="w-full m-4 grow overflow-y-auto"
+          >
+            <ul
+              id="responses"
+              className="mx-4"
+            >
+
+            </ul>
+          </div>
+          <form
+            onSubmit={handleSubmit}
+            className="flex w-full h-16 mb-4"
+          >
+            <input
+              id="ask-input"
+              type="text"
+              placeholder="Ask me about Edinburgh!"
+              value={input}
+              onChange={handleInputChange}
+              className="grow ml-4 mr-2 p-4 rounded-md bg-white/70 hover:bg-white/90 focus:bg-white/90 transition-colors"
+            />
+            <button
+              type="submit"
+              className="w-20 mr-4 bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded"
+            >
+              ASK
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  ) : (
     <div className="flex flex-col items-center justify-center h-screen">
       <h1 className="mb-4 text-lg font-bold uppercase">
         { loc }
       </h1>
-      {/* <textarea
-        value={completion}
-        rows={20}
-        cols={100}
-        readOnly
-        className="w-3/4 mb-4 p-4 border-2 border-black rounded-md"
-      >
-      </textarea> */}
       <div className="w-3/4 h-[300px] mb-4 p-4 border-2 border-black rounded-md overflow-y-scroll">
         <ul id="responses"></ul>
       </div>

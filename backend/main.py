@@ -60,7 +60,7 @@ class ConnectionManager:
 
     async def broadcast(self, message):
         for connection in self.active_connections:
-            await connection.send_json(json.dumps(message))
+            await connection.send_json(message)
         # Return control to the event loop so that messages are broadcast individually
         await asyncio.sleep(0)
 
@@ -103,12 +103,19 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
     try:
         while True:
             input = await websocket.receive_text()
-            if in_game:
-                await llm.continue_game_with_input(int(input), manager.broadcast)
-            else:
+            try:
+                choice = int(input)
+                await llm.continue_game_with_input(choice, manager.broadcast)
+            except ValueError:
                 in_game = True
                 await manager.broadcast({ "type": "prompt", "data": input })
                 await llm.start_game(input, manager.broadcast)
+            # if in_game:
+            #     await llm.continue_game_with_input(int(input), manager.broadcast)
+            # else:
+            #     in_game = True
+            #     await manager.broadcast({ "type": "prompt", "data": input })
+            #     await llm.start_game(input, manager.broadcast)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast(f"Client {client_id} left the chat")
