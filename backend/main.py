@@ -1,8 +1,9 @@
 # Main driver file to prompt our model
 # System imports
 import asyncio
-import subprocess
+import json
 from os import getenv, path
+import subprocess
 
 # External imports
 from dotenv import load_dotenv
@@ -57,9 +58,9 @@ class ConnectionManager:
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
 
-    async def broadcast(self, message: str):
+    async def broadcast(self, message):
         for connection in self.active_connections:
-            await connection.send_json(message)
+            await connection.send_json(json.dumps(message))
         # Return control to the event loop so that messages are broadcast individually
         await asyncio.sleep(0)
 
@@ -71,6 +72,14 @@ class Question(BaseModel):
     prompt: str
 
 app = FastAPI()
+in_game = False
+
+
+# Define global variables
+@app.on_event("startup")
+def startup_event():
+    global llm
+    llm = LLM(device)
 
 # Route for testing the API
 @app.get("/")
@@ -89,29 +98,20 @@ async def ask(question: Question):
 # Route for testing websockets
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    global in_game
     await manager.connect(websocket)
     try:
         while True:
-            data = await websocket.receive_text()
-            # await manager.send_personal_message(f"You asked: {data}", websocket)
-            await manager.broadcast(f"Client {client_id} asked: {data}")
-            await llm.generator(data, manager.broadcast)
-            # await manager.broadcast(reply)
+            input = await websocket.receive_text()
+            if in_game:
+                await llm.continue_game_with_input(int(input), manager.broadcast)
+            else:
+                in_game = True
+                await manager.broadcast({ "type": "prompt", "data": input })
+                await llm.start_game(input, manager.broadcast)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast(f"Client {client_id} left the chat")
-# Single-socket connection
-# async def websocket_endpoint(websocket: WebSocket):
-#     await websocket.accept()
-#     while True:
-#         data = await websocket.receive_text()
-#         reply = generator(data)
-#         await websocket.send_text(reply)
-
-@app.on_event("startup")
-def startup_event():
-    global llm
-    llm = LLM(device)
 
 
 if __name__ == "__main__":

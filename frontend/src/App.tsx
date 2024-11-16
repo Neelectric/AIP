@@ -99,7 +99,7 @@ function App() {
         className="w-3/4 mb-4 p-4 border-2 border-black rounded-md"
       >
       </textarea> */}
-      <div className="w-3/4 h-[300px] mb-4 p-4 border-2 border-black rounded-md">
+      <div className="w-3/4 h-[300px] mb-4 p-4 border-2 border-black rounded-md overflow-y-scroll">
         <ul id="responses"></ul>
       </div>
       <form
