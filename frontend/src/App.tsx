@@ -106,7 +106,7 @@ function App() {
               continue;
             var content = data.data[i].token;
             content += "<br></br>";
-            content += data.data[i].prob;
+            content += Math.floor(data.data[i].prob * 100) + "%";
             button.innerHTML = content;
           }
         }
@@ -120,6 +120,10 @@ function App() {
       input.value = "";
       event.preventDefault();
   };
+
+  function choiceSelect(choice)  {
+    ws.current?.send(choice);
+  }
 
 
   // Render the interface
@@ -176,12 +180,12 @@ function App() {
           ...
         </div>
         <img className="w-full px-[9.5%]" src="public/connectors.svg"></img>
-        <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center">
-          <ul id="opt-0">Example 1<br></br>90%</ul>
-          <ul id="opt-1">Example Two</ul>
-          <ul id="opt-2">Ex 3</ul>
-          <ul id="opt-3">Example 4</ul>
-          <ul id="opt-4">Ex 5</ul>
+        <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
+          <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
+          <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>
+          <ul id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(3)}></ul>
+          <ul id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(4)}></ul>
+          <ul id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(5)}></ul>
         </div>
       </div>
       <div className="font-bold">
