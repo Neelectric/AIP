@@ -38,6 +38,15 @@ function App() {
       const responses = document.getElementById("responses")!;
       
       if(data.type === "prompt") {
+        if (loc == 'inside') {
+          const query = document.getElementById("userQuery");
+          if (!query) return;
+          query.innerText = data.data;
+          const response = document.getElementById("response");
+          if (!response) return;
+          response.innerHTML = "";
+        }
+        else{
         const prompt = document.createElement("li");
         const promptContent = document.createTextNode(`You: ${data.data}`);
         prompt.appendChild(promptContent);
@@ -49,18 +58,31 @@ function App() {
         const responseContent = document.createTextNode(`EdinBot: `);
         response.appendChild(responseContent);
         responses.appendChild(response);
+        }
       }
       else if(data.type === "next_token") {
-        const response = document.getElementById(`response-${responseCounter.current}`);
-        if(!response) return;
-        
         const token = data.data as string;
         console.log(token);
+        var respID = "";
+        if(loc == 'inside'){
+          respID = 'response';
+        }
+        else {
+          respID = `response-${responseCounter.current}`;
+        }
+        const response = document.getElementById(respID)
+        if(!response) return;
+
         if (token === "<|eot_id|>") {
+          if (loc == 'inside'){
+
+          }
+          else{
           responseCounter.current += 1;
           const response = document.createElement("li");
           response.setAttribute("id", `response-${responseCounter.current}`);
           responses.appendChild(response);
+          }
         }
         else if (
           token === "<|start_header_id|>" ||
@@ -77,10 +99,17 @@ function App() {
         prevToken.current = token;
       }
       else if(data.type === "inside_choice") {
-        // const response = document.createElement("li");
-        // const content = document.createTextNode(event.data);
-        // response.appendChild(content);
-        // responses.appendChild(response);
+        if (loc == 'inside') {
+          for (let i = 0; i < 5; i++){
+            const button = document.getElementById(`opt-${i}`);
+            if(!button)
+              continue;
+            var content = data.data[i].token;
+            content += "<br></br>";
+            content += data.data[i].prob;
+            button.innerHTML = content;
+          }
+        }
       }
     };
   });
@@ -135,31 +164,29 @@ function App() {
       </div>
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="mb-4 text-lg font-bold uppercase">
-        { loc }
-      </h1>
-      <div className="w-3/4 h-[300px] mb-4 p-4 border-2 border-black rounded-md overflow-y-scroll">
-        <ul id="responses"></ul>
+    <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
+      <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
+        <h1 className="mr-2">User Query: </h1>
+        <h2 id="userQuery"></h2>
       </div>
-      <form
-        onSubmit={handleSubmit}
-        className="flex w-3/4"
-      >
-        <input
-          id="ask-input"
-          type="text"
-          value={input}
-          onChange={handleInputChange}
-          className="grow mr-2 p-4 border-2 border-black rounded-md"
-        />
-        <button
-          type="submit"
-          className="w-20 bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded"
-        >
-          ASK
-        </button>
-      </form>
+      <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
+        <div className="w-3/4 mb-4 p-4 border-2 border-lime-500 rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
+          <h1 className="font-bold">Your Response:</h1>
+          <span id="response"></span>
+          ...
+        </div>
+        <img className="w-full px-[9.5%]" src="public/connectors.svg"></img>
+        <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center">
+          <ul id="opt-0">Example 1<br></br>90%</ul>
+          <ul id="opt-1">Example Two</ul>
+          <ul id="opt-2">Ex 3</ul>
+          <ul id="opt-3">Example 4</ul>
+          <ul id="opt-4">Ex 5</ul>
+        </div>
+      </div>
+      <div className="font-bold">
+        <h3>Select the next word to continue the response</h3>
+      </div>
     </div>
   );
 }

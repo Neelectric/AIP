@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="183.03831mm"
+   height="48.350002mm"
+   viewBox="0 0 183.03831 48.350002"
+   version="1.1"
+   id="svg1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <marker
+       style="overflow:visible"
+       id="ColoredDot"
+       refX="-3"
+       refY="0"
+       orient="auto"
+       markerWidth="0.5"
+       markerHeight="0.5"
+       viewBox="0 0 1 1"
+       preserveAspectRatio="xMidYMid">
+      <path
+         transform="scale(0.45)"
+         style="fill:context-fill;fill-rule:evenodd;stroke:context-stroke;stroke-width:2"
+         d="M 5,0 C 5,2.76 2.76,5 0,5 -2.76,5 -5,2.76 -5,0 c 0,-2.76 2.3,-5 5,-5 2.76,0 5,2.24 5,5 z"
+         id="path20" />
+    </marker>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(-8.3116827,-9.5000004)">
+    <path
+       style="fill:none;stroke:#65a30d;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ColoredDot)"
+       d="m 100,9.9999997 c 0,0 -2.117939,19.9999983 15,19.9999983 17.11794,0 35,0 50,0 15,0 25,5 25,25"
+       id="path2" />
+    <path
+       style="fill:none;stroke:#65a30d;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ColoredDot)"
+       d="m 100,9.9999997 c 0,0 -2.315423,19.9999993 15,19.9999993 17.31543,0 30,0 30,24.999999"
+       id="path1" />
+    <path
+       style="display:inline;fill:none;stroke:#65a30d;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ColoredDot)"
+       d="M 99.661682,9.9999995 100,54.999998"
+       id="path3" />
+    <path
+       style="fill:none;stroke:#65a30d;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ColoredDot)"
+       d="m 99.661683,9.9999995 c 0,0 2.315417,19.9999995 -15,19.9999995 -17.31543,0 -30,0 -30,24.999999"
+       id="path1-5" />
+    <path
+       style="fill:none;stroke:#65a30d;stroke-width:1;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#ColoredDot)"
+       d="m 99.661683,9.9999995 c 0,0 2.117937,19.9999985 -15,19.9999985 -17.11794,0 -35,0 -50,0 -15,0 -24.9999997,5 -24.9999997,25"
+       id="path2-3" />
+  </g>
+</svg>
