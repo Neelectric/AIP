@@ -8,9 +8,9 @@ class NeedHumanInputException(Exception):
 
 
 class LLM:
-	model_id = "meta-llama/Llama-3.1-8B-Instruct"
+	# model_id = "meta-llama/Llama-3.1-8B-Instruct"
 	# model_id = "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
-	# model_id = "meta-llama/Llama-3.2-3B-Instruct"
+	model_id = "meta-llama/Llama-3.2-3B-Instruct"
 	
 	max_new_tokens = 100
 	num_choices = 5

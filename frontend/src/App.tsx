@@ -17,9 +17,6 @@ function App() {
   const responseCounter = useRef(0);
   const prevToken = useRef("");
 
-  const [input, setInput] = useState("");
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => setInput(event.target.value);
-
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
@@ -46,18 +43,13 @@ function App() {
           if (!response) return;
           response.innerHTML = "";
         }
-        else{
-        const prompt = document.createElement("li");
-        const promptContent = document.createTextNode(`You: ${data.data}`);
-        prompt.appendChild(promptContent);
-        responses.appendChild(prompt);
-
-        responseCounter.current += 1;
-        const response = document.createElement("li");
-        response.setAttribute("id", `response-${responseCounter.current}`);
-        const responseContent = document.createTextNode(`EdinBot: `);
-        response.appendChild(responseContent);
-        responses.appendChild(response);
+        else {
+          responseCounter.current += 1;
+          const response = document.createElement("li");
+          response.setAttribute("id", `response-${responseCounter.current}`);
+          const responseContent = document.createTextNode(`EdinBot: `);
+          response.appendChild(responseContent);
+          responses.appendChild(response);
         }
       }
       else if(data.type === "next_token") {
@@ -77,7 +69,7 @@ function App() {
           if (loc == 'inside'){
 
           }
-          else{
+          else {
           responseCounter.current += 1;
           const response = document.createElement("li");
           response.setAttribute("id", `response-${responseCounter.current}`);
@@ -113,14 +105,21 @@ function App() {
       }
     };
   });
+
+  // Handle outside
+  const [waitingForQuery, setWaitingForQuery] = useState(true);
   
+  const [userQuery, setUserQuery] = useState("");
+  const handleUserQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => setUserQuery(event.target.value);
+
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const input = document.getElementById("ask-input")! as HTMLInputElement;
     ws.current?.send(input.value);
-    input.value = "";
-    event.preventDefault();
+    setWaitingForQuery(false);
   };
 
+  // Handle inside
   function choiceSelect(choice: number)  {
     ws.current?.send(choice.toString());
   }
@@ -128,44 +127,46 @@ function App() {
 
   // Render the interface
   return loc === "outside" ? (
-    <div className={`w-screen h-screen flex flex-col justify-center bg-[url("/editomorrow.webp")] bg-center bg-cover bg-no-repeat`}>
-      <div className="h-full w-[70%] mx-auto mt-32 mb-32 backdrop-blur-3xl rounded-lg shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff]">
-        <div className="w-full h-full flex flex-col items-center rounded-lg bg-white/70 border-0 border-white">
-          <img 
-            src="/edinbot.webp"
-            alt="Edinbot logo"
-            className="w-60 mx-auto mt-10"
-          />
-          <div
-            id="output_window"
-            className="w-full m-4 grow overflow-y-auto"
-          >
-            <ul
-              id="responses"
-              className="mx-4"
-            >
-
-            </ul>
-          </div>
+    <div className={`w-screen h-screen flex flex-col items-center justify-center bg-[url("/editomorrow.webp")] bg-center bg-cover bg-no-repeat bg-white/30 bg-blend-lighten`}>
+      <img 
+        src="/edinbot.webp"
+        alt="Edinbot logo"
+        className="w-[16.5rem] -mb-6 drop-shadow-[0_0_32px_white]"
+      />
+      <div className="w-[70%] flex flex-col border border-white/80 backdrop-blur-3xl rounded-lg shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff] overflow-hidden">
+        <div className={`bg-white/70 ${waitingForQuery ? "hover:bg-white/90 focus-within:bg-white/90" : ""} transition-colors`}>
+          {/* User input */}
           <form
             onSubmit={handleSubmit}
-            className="flex w-full h-16 mb-4"
+            className="flex"
           >
             <input
               id="ask-input"
               type="text"
+              value={userQuery}
               placeholder="Ask me about Edinburgh!"
-              value={input}
-              onChange={handleInputChange}
-              className="grow ml-4 mr-2 p-4 rounded-md bg-white/70 hover:bg-white/90 focus:bg-white/90 transition-colors"
+              onChange={handleUserQueryChange}
+              readOnly={!waitingForQuery}
+              className={`grow p-6 text-xl placeholder:text-gray-600 bg-transparent focus:outline-none ${waitingForQuery ? "rounded-l-lg" : "rounded-lg"}`}
             />
-            <button
-              type="submit"
-              className="w-20 mr-4 bg-blue-500 hover:bg-blue-600 text-white font-bold px-4 rounded"
-            >
-              ASK
-            </button>
+            {
+              waitingForQuery &&
+              <button
+                type="submit"
+                className="p-6 bg-blue-950 hover:bg-blue-800 text-white font-bold text-xl"
+              >
+                ASK
+              </button>
+            }
           </form>
+          {/* Model output */}
+          { !waitingForQuery &&
+            <ul
+              id="responses"
+              className="p-6 text-xl space-y-2 border-t border-white/80"
+            >
+            </ul>
+          }
         </div>
       </div>
     </div>
