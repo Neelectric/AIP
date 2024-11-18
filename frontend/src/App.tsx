@@ -14,6 +14,8 @@ const loc = params.get("loc") as Loc;
 
 
 function App() {
+  const [gameFinished, setGameFinished] = useState(false);
+
   const responseCounter = useRef(0);
   const prevToken = useRef("");
 
@@ -103,6 +105,9 @@ function App() {
           }
         }
       }
+      else if(data.type === "finish") {
+        setGameFinished(true);
+      }
     };
   });
 
@@ -115,14 +120,20 @@ function App() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const input = document.getElementById("ask-input")! as HTMLInputElement;
-    ws.current?.send(input.value);
+    ws.current?.send(JSON.stringify({ type: "start_game", data: input.value}));
     setWaitingForQuery(false);
   };
 
+  const restartGame = () => {
+    setGameFinished(false);
+    setWaitingForQuery(true);
+    setUserQuery("");
+  };
+
   // Handle inside
-  function choiceSelect(choice: number)  {
-    ws.current?.send(choice.toString());
-  }
+  const choiceSelect = (choice: number) => {
+    ws.current?.send(JSON.stringify({ type: "choice", data: choice }));
+  };
 
 
   // Render the interface
@@ -147,6 +158,7 @@ function App() {
               placeholder="Ask me about Edinburgh!"
               onChange={handleUserQueryChange}
               readOnly={!waitingForQuery}
+              autoComplete="off"
               className={`grow p-6 text-xl placeholder:text-gray-600 bg-transparent focus:outline-none ${waitingForQuery ? "rounded-l-lg" : "rounded-lg"}`}
             />
             {
@@ -169,6 +181,19 @@ function App() {
           }
         </div>
       </div>
+      { gameFinished &&
+        <button
+          className="mt-8 border border-white/80 backdrop-blur-3xl rounded-full shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff] active:shadow-[2px_2px_16px_#bebebe,-2px_-2px_16px_#ffffff] overflow-hidden transition-shadow"
+          onClick={restartGame}
+        >
+          <div className="bg-white/70 p-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" className="fill-blue-950" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
+              <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
+            </svg>
+          </div>
+        </button>
+      }
     </div>
   ) : (
     <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
@@ -182,7 +207,7 @@ function App() {
           <span id="response"></span>
           ...
         </div>
-        <img className="w-full px-[9.5%]" src="public/connectors.svg"></img>
+        <img className="w-full px-[9.5%]" src="connectors.svg"></img>
         <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
           <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
           <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>

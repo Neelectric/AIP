@@ -12,11 +12,10 @@ class LLM:
 	# model_id = "Unispac/Gemma-2-9B-IT-With-Deeper-Safety-Alignment"
 	model_id = "meta-llama/Llama-3.2-3B-Instruct"
 	
-	max_new_tokens = 100
 	num_choices = 5
 	chat_history = []
 	# system_prompt = "You are a chatbot simulating a resident of Leith, in Scotland. In recent years the demand for housing increased immensely in the whole city, as well as Leith. As a result, rent prices shot up immensely, and many landlords forced tenants out of their flats to capitalize on new rental contracts with higher rates. You and many close friends of your community lost your long-term homes and had to resettle to other parts of the city were you were still able to afford rent. You are incredibly bitter and sad about this development, and have strong opinions about people who have taken your old flat and the landlords who forced you out."
-	system_prompt = "You are a chatbot very knowledgeable about Edinburgh, giving responses in no more than one sentence."
+	system_prompt = "You are a chatbot named EdinBot. You're very knowledgeable about Edinburgh and give short responses to user queries."
 
 
 	def __init__(self, device):
@@ -44,7 +43,7 @@ class LLM:
 
 	async def start_game(self, prompt: str, broadcast):
 		# Reset how much we are allowed to generate
-		self.max_new_tokens = 100
+		self.max_new_tokens = 10
 
 		messages = [
 			{"role": "system", "content": self.system_prompt},
@@ -65,6 +64,8 @@ class LLM:
 			except NeedHumanInputException:
 				break
 
+		if self.max_new_tokens == 0:
+			await broadcast({ "type": "finish" })
 
 	async def continue_game_with_input(self, input: int, broadcast):
 		choice_index = input - 1
@@ -79,6 +80,8 @@ class LLM:
 			except NeedHumanInputException:
 				break
 
+		if self.max_new_tokens == 0:
+			await broadcast({ "type": "finish" })
 
 	async def generate_next(self, broadcast):
 		generate_decoder_only_output = self.model.generate(

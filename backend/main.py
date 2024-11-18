@@ -72,8 +72,6 @@ class Question(BaseModel):
     prompt: str
 
 app = FastAPI()
-in_game = False
-
 
 # Define global variables
 @app.on_event("startup")
@@ -98,24 +96,17 @@ async def ask(question: Question):
 # Route for testing websockets
 @app.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: str):
-    global in_game
     await manager.connect(websocket)
     try:
         while True:
-            input = await websocket.receive_text()
-            try:
-                choice = int(input)
+            input = await websocket.receive_json()
+            if input["type"] == "start_game":
+                prompt = input["data"]
+                await manager.broadcast({ "type": "prompt", "data": prompt })
+                await llm.start_game(prompt, manager.broadcast)
+            else:
+                choice = int(input["data"])
                 await llm.continue_game_with_input(choice, manager.broadcast)
-            except ValueError:
-                in_game = True
-                await manager.broadcast({ "type": "prompt", "data": input })
-                await llm.start_game(input, manager.broadcast)
-            # if in_game:
-            #     await llm.continue_game_with_input(int(input), manager.broadcast)
-            # else:
-            #     in_game = True
-            #     await manager.broadcast({ "type": "prompt", "data": input })
-            #     await llm.start_game(input, manager.broadcast)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
         await manager.broadcast(f"Client {client_id} left the chat")
