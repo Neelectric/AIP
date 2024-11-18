@@ -9,6 +9,7 @@ export default ({ mode }: { mode: string }) => {
 
   // Configure Vite
   return defineConfig({
+    base: "/s2118232/",
     plugins: [nodePolyfills(), react()],
     server: {
       proxy: {

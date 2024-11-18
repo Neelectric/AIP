@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import sql from "./db";
+// import sql from "./db";
 
 
 type Loc = "outside" | "inside";
@@ -23,8 +23,8 @@ function App() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
-    // ws.current = new WebSocket(`ws://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
+    // ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
+    ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
 
     return () => {
       ws.current?.close();
@@ -124,20 +124,20 @@ function App() {
     setWaitingForQuery(false);
   };
 
-  const insertConversation = async (name: string) => {
-    const insertion = await sql`
-      insert into tests
-        (name)
-      values
-        (${name})
-      returning name
-    `;
+  // const insertConversation = async (name: string) => {
+  //   const insertion = await sql`
+  //     insert into tests
+  //       (name)
+  //     values
+  //       (${name})
+  //     returning name
+  //   `;
 
-    return insertion;
-  };
+  //   return insertion;
+  // };
 
   const restartGame = () => {
-    insertConversation("test test test");
+    // insertConversation("test test test");
     setGameFinished(false);
     setWaitingForQuery(true);
     setUserQuery("");
@@ -153,7 +153,7 @@ function App() {
   return loc === "outside" ? (
     <div className={`w-screen h-screen flex flex-col items-center justify-center bg-[url("/editomorrow.webp")] bg-center bg-cover bg-no-repeat bg-white/30 bg-blend-lighten`}>
       <img 
-        src="/edinbot.webp"
+        src="./edinbot.webp"
         alt="Edinbot logo"
         className="w-[16.5rem] -mb-6 drop-shadow-[0_0_32px_white]"
       />
