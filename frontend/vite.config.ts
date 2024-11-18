@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
+import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 
 export default ({ mode }: { mode: string }) => {
@@ -8,7 +9,7 @@ export default ({ mode }: { mode: string }) => {
 
   // Configure Vite
   return defineConfig({
-    plugins: [react()],
+    plugins: [nodePolyfills(), react()],
     server: {
       proxy: {
         "/api": {

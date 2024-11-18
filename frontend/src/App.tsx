@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import sql from "./db";
 
 
 type Loc = "outside" | "inside";
@@ -56,15 +57,14 @@ function App() {
       }
       else if(data.type === "next_token") {
         const token = data.data as string;
-        console.log(token);
-        var respID = "";
+        let respID = "";
         if(loc == 'inside'){
           respID = 'response';
         }
         else {
           respID = `response-${responseCounter.current}`;
         }
-        const response = document.getElementById(respID)
+        const response = document.getElementById(respID);
         if(!response) return;
 
         if (token === "<|eot_id|>") {
@@ -124,7 +124,20 @@ function App() {
     setWaitingForQuery(false);
   };
 
+  const insertConversation = async (name: string) => {
+    const insertion = await sql`
+      insert into tests
+        (name)
+      values
+        (${name})
+      returning name
+    `;
+
+    return insertion;
+  };
+
   const restartGame = () => {
+    insertConversation("test test test");
     setGameFinished(false);
     setWaitingForQuery(true);
     setUserQuery("");
