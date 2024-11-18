@@ -13,7 +13,7 @@ class LLM:
 	# model_id = "meta-llama/Llama-3.2-3B-Instruct"
 	
 	max_new_tokens = 100
-	num_choices = 7
+	num_choices = 5
 	chat_history = []
 	# system_prompt = "You are a chatbot simulating a resident of Leith, in Scotland. In recent years the demand for housing increased immensely in the whole city, as well as Leith. As a result, rent prices shot up immensely, and many landlords forced tenants out of their flats to capitalize on new rental contracts with higher rates. You and many close friends of your community lost your long-term homes and had to resettle to other parts of the city were you were still able to afford rent. You are incredibly bitter and sad about this development, and have strong opinions about people who have taken your old flat and the landlords who forced you out."
 	system_prompt = "You are a chatbot very knowledgeable about Edinburgh, giving responses in no more than one sentence."

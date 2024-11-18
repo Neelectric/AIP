@@ -115,25 +115,27 @@ function App() {
   });
   
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-      const input = document.getElementById("ask-input")! as HTMLInputElement;
-      ws.current?.send(input.value);
-      input.value = "";
-      event.preventDefault();
+    const input = document.getElementById("ask-input")! as HTMLInputElement;
+    ws.current?.send(input.value);
+    input.value = "";
+    event.preventDefault();
   };
 
-  function choiceSelect(choice)  {
-    ws.current?.send(choice);
+  function choiceSelect(choice: number)  {
+    ws.current?.send(choice.toString());
   }
 
 
   // Render the interface
   return loc === "outside" ? (
     <div className={`w-screen h-screen flex flex-col justify-center bg-[url("/editomorrow.webp")] bg-center bg-cover bg-no-repeat`}>
-      {/* <div>
-        Edinbot
-      </div> */}
-      <div className="h-full w-[70%] mx-auto mt-16 mb-32 backdrop-blur-3xl rounded-lg overflow-hidden shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff]">
+      <div className="h-full w-[70%] mx-auto mt-32 mb-32 backdrop-blur-3xl rounded-lg shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff]">
         <div className="w-full h-full flex flex-col items-center rounded-lg bg-white/70 border-0 border-white">
+          <img 
+            src="/edinbot.webp"
+            alt="Edinbot logo"
+            className="w-60 mx-auto mt-10"
+          />
           <div
             id="output_window"
             className="w-full m-4 grow overflow-y-auto"
