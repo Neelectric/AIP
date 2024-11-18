@@ -115,10 +115,11 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 if __name__ == "__main__":
     # Launch the frontend app as a separate Python subprocess
     # (essentially just goes to the frontend server and runs 'npm run dev' there for us)
-    spa_process = subprocess.Popen(
-        args=ui_proxy_launch_cmd.split(" "),
-        cwd=app_frontend_path
-    )
+    # No longer used now that the backend and frontend are separated
+    # spa_process = subprocess.Popen(
+    #     args=ui_proxy_launch_cmd.split(" "),
+    #     cwd=app_frontend_path
+    # )
 
     # Launch the backend server
     # Uvicorn is a server programme that runs the 'app' object in 'main.py' (here)
