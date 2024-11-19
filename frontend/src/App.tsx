@@ -14,8 +14,21 @@ const params = new URLSearchParams(document.location.search);
 const loc = params.get("loc") as Loc;
 
 
+// Download file method
+const downloadFile = (uriComponent: string | number | boolean, fileName: string) => {
+	const data = "data:text/json;charset=utf-8," + encodeURIComponent(uriComponent);
+	const downloadAnchor = document.createElement("a");
+	downloadAnchor.setAttribute("href", data);
+	downloadAnchor.setAttribute("download", fileName + ".json");
+	document.body.appendChild(downloadAnchor);
+	downloadAnchor.click();
+	downloadAnchor.remove();
+};
+
+
 function App() {
   const [gameFinished, setGameFinished] = useState(false);
+  const responseRef = useRef("");
 
   const responseCounter = useRef(0);
   const prevToken = useRef("");
@@ -23,8 +36,8 @@ function App() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
-    ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
+     ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
+    //ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
 
     return () => {
       ws.current?.close();
@@ -50,8 +63,8 @@ function App() {
           responseCounter.current += 1;
           const response = document.createElement("li");
           response.setAttribute("id", `response-${responseCounter.current}`);
-          const responseContent = document.createTextNode(`EdinBot: `);
-          response.appendChild(responseContent);
+          // const responseContent = document.createTextNode(`EdinBot: `);
+          // response.appendChild(responseContent);
           responses.appendChild(response);
         }
       }
@@ -68,14 +81,15 @@ function App() {
         if(!response) return;
 
         if (token === "<|eot_id|>") {
+          responseRef.current = responseRef.current.concat(token);
           if (loc == 'inside'){
 
           }
           else {
-          responseCounter.current += 1;
-          const response = document.createElement("li");
-          response.setAttribute("id", `response-${responseCounter.current}`);
-          responses.appendChild(response);
+            responseCounter.current += 1;
+            const response = document.createElement("li");
+            response.setAttribute("id", `response-${responseCounter.current}`);
+            responses.appendChild(response);
           }
         }
         else if (
@@ -84,6 +98,7 @@ function App() {
           (prevToken.current === "<|start_header_id|>" && token === "assistant")
         ) {}
         else {
+          responseRef.current = responseRef.current.concat(token);
           for (const char of token) {
             const content = document.createTextNode(char);
             response.appendChild(content);
@@ -137,7 +152,12 @@ function App() {
   // };
 
   const restartGame = () => {
-    // insertConversation("test test test");
+    if (confirm("Would you like to save this conversation?")) {
+      // Save the conversation
+      // insertConversation("test test test");
+      downloadFile(JSON.stringify({ date: Date.now(), prompt: userQuery, response: responseRef.current }), (new Date()).toISOString());
+    }
+    responseRef.current = "";
     setGameFinished(false);
     setWaitingForQuery(true);
     setUserQuery("");
@@ -186,11 +206,18 @@ function App() {
           </form>
           {/* Model output */}
           { !waitingForQuery &&
-            <ul
-              id="responses"
-              className="p-6 text-xl space-y-2 border-t border-white/80"
-            >
-            </ul>
+            <div className="flex items-center p-6 border-t border-white/80">
+              { !gameFinished &&
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="inline-block mr-4 animate-spin" viewBox="0 0 16 16">
+                  <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                </svg>
+              }
+              <ul
+                id="responses"
+                className="text-xl space-y-2"
+              >
+              </ul>
+            </div>
           }
         </div>
       </div>
@@ -201,7 +228,7 @@ function App() {
         >
           <div className="bg-white/70 p-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" className="fill-blue-950" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
+              <path fillRule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
               <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
             </svg>
           </div>
@@ -209,28 +236,38 @@ function App() {
       }
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
-      <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
-        <h1 className="mr-2">User Query: </h1>
-        <h2 id="userQuery"></h2>
+    <div>
+      <div className="absolute position-center flex flex-col justify-around p-8 text-center z-10 w-[90vw] h-[90vh] mx-[5vw] my-[5vh] bg-black bg-opacity-80 rounded-lg border-solid border-lime-500 border-2 text-lime-600 shadow-[0px_0px_30px_#65a30d]">
+        <h2 className="font-bold">Welcome</h2>
+        <p>Text generators respond to prompts by predicting the most likely next token, essentially building replies one word at a time. A bit of randomness, 
+          like choosing (sampling) from the top 5 words instead of the most likely one, keeps their answers interesting but also makes them less reliable.</p>
+        <p>Today, <span className="underline">you</span> get to be that random factor. See how much your choices steer the output, and decide
+        exactly how helpful you want EdinBot to be!</p>
       </div>
-      <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
-        <div className="w-3/4 mb-4 p-4 border-2 border-lime-500 rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
-          <h1 className="font-bold">Your Response:</h1>
-          <span id="response"></span>
-          ...
+      <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
+        <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
+          <h1 className="mr-2">User Query: </h1>
+          <h2 id="userQuery"></h2>
         </div>
-        <img className="w-full px-[9.5%]" src="connectors.svg"></img>
-        <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
-          <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
-          <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>
-          <ul id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(3)}></ul>
-          <ul id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(4)}></ul>
-          <ul id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(5)}></ul>
+        <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
+          <div className="w-3/4 mb-4 p-4 border-2 border-lime-500 rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
+            <h1 className="font-bold">Your Response:</h1>
+            <span id="response"></span>
+            ...
+          </div>
+          {!gameFinished && <img className="w-full px-[9.5%]" src="connectors.svg"></img>}
+          {!gameFinished && <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
+            <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
+            <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>
+            <ul id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(3)}></ul>
+            <ul id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(4)}></ul>
+            <ul id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(5)}></ul>
+          </div>}
         </div>
-      </div>
-      <div className="font-bold">
-        <h3>Select the next word to continue the response</h3>
+        <div className="font-bold">
+          {!gameFinished && <h3>Select the next word to continue the response</h3>}
+          {gameFinished && <h3>Response complete. Thanks for playing!</h3>}
+        </div>
       </div>
     </div>
   );
