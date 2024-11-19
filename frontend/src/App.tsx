@@ -23,8 +23,8 @@ function App() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-    // ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
-    ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
+     ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
+    //ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
 
     return () => {
       ws.current?.close();
@@ -209,28 +209,38 @@ function App() {
       }
     </div>
   ) : (
-    <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
-      <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
-        <h1 className="mr-2">User Query: </h1>
-        <h2 id="userQuery"></h2>
+    <div>
+      <div className="absolute position-center flex flex-col justify-around p-8 text-center z-10 w-[90vw] h-[90vh] mx-[5vw] my-[5vh] bg-black bg-opacity-80 rounded-lg border-solid border-lime-500 border-2 text-lime-600 shadow-[0px_0px_30px_#65a30d]">
+        <h2 className="font-bold">Welcome</h2>
+        <p>Text generators respond to prompts by predicting the most likely next token, essentially building replies one word at a time. A bit of randomness, 
+          like choosing (sampling) from the top 5 words instead of the most likely one, keeps their answers interesting but also makes them less reliable.</p>
+        <p>Today, <span className="underline">you</span> get to be that random factor. See how much your choices steer the output, and decide
+        exactly how helpful you want EdinBot to be!</p>
       </div>
-      <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
-        <div className="w-3/4 mb-4 p-4 border-2 border-lime-500 rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
-          <h1 className="font-bold">Your Response:</h1>
-          <span id="response"></span>
-          ...
+      <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
+        <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
+          <h1 className="mr-2">User Query: </h1>
+          <h2 id="userQuery"></h2>
         </div>
-        <img className="w-full px-[9.5%]" src="connectors.svg"></img>
-        <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
-          <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
-          <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>
-          <ul id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(3)}></ul>
-          <ul id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(4)}></ul>
-          <ul id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(5)}></ul>
+        <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
+          <div className="w-3/4 mb-4 p-4 border-2 border-lime-500 rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
+            <h1 className="font-bold">Your Response:</h1>
+            <span id="response"></span>
+            ...
+          </div>
+          {!gameFinished && <img className="w-full px-[9.5%]" src="connectors.svg"></img>}
+          {!gameFinished && <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
+            <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
+            <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>
+            <ul id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(3)}></ul>
+            <ul id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(4)}></ul>
+            <ul id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(5)}></ul>
+          </div>}
         </div>
-      </div>
-      <div className="font-bold">
-        <h3>Select the next word to continue the response</h3>
+        <div className="font-bold">
+          {!gameFinished && <h3>Select the next word to continue the response</h3>}
+          {gameFinished && <h3>Response complete. Thanks for playing!</h3>}
+        </div>
       </div>
     </div>
   );
