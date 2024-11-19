@@ -63,8 +63,8 @@ function App() {
           responseCounter.current += 1;
           const response = document.createElement("li");
           response.setAttribute("id", `response-${responseCounter.current}`);
-          const responseContent = document.createTextNode(`EdinBot: `);
-          response.appendChild(responseContent);
+          // const responseContent = document.createTextNode(`EdinBot: `);
+          // response.appendChild(responseContent);
           responses.appendChild(response);
         }
       }
@@ -206,11 +206,18 @@ function App() {
           </form>
           {/* Model output */}
           { !waitingForQuery &&
-            <ul
-              id="responses"
-              className="p-6 text-xl space-y-2 border-t border-white/80"
-            >
-            </ul>
+            <div className="flex items-center p-6 border-t border-white/80">
+              { !gameFinished &&
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="inline-block mr-4 animate-spin" viewBox="0 0 16 16">
+                  <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+                </svg>
+              }
+              <ul
+                id="responses"
+                className="text-xl space-y-2"
+              >
+              </ul>
+            </div>
           }
         </div>
       </div>
