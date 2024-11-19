@@ -14,8 +14,21 @@ const params = new URLSearchParams(document.location.search);
 const loc = params.get("loc") as Loc;
 
 
+// Download file method
+const downloadFile = (uriComponent: string | number | boolean, fileName: string) => {
+	const data = "data:text/json;charset=utf-8," + encodeURIComponent(uriComponent);
+	const downloadAnchor = document.createElement("a");
+	downloadAnchor.setAttribute("href", data);
+	downloadAnchor.setAttribute("download", fileName + ".json");
+	document.body.appendChild(downloadAnchor);
+	downloadAnchor.click();
+	downloadAnchor.remove();
+};
+
+
 function App() {
   const [gameFinished, setGameFinished] = useState(false);
+  const responseRef = useRef("");
 
   const responseCounter = useRef(0);
   const prevToken = useRef("");
@@ -68,14 +81,15 @@ function App() {
         if(!response) return;
 
         if (token === "<|eot_id|>") {
+          responseRef.current = responseRef.current.concat(token);
           if (loc == 'inside'){
 
           }
           else {
-          responseCounter.current += 1;
-          const response = document.createElement("li");
-          response.setAttribute("id", `response-${responseCounter.current}`);
-          responses.appendChild(response);
+            responseCounter.current += 1;
+            const response = document.createElement("li");
+            response.setAttribute("id", `response-${responseCounter.current}`);
+            responses.appendChild(response);
           }
         }
         else if (
@@ -84,6 +98,7 @@ function App() {
           (prevToken.current === "<|start_header_id|>" && token === "assistant")
         ) {}
         else {
+          responseRef.current = responseRef.current.concat(token);
           for (const char of token) {
             const content = document.createTextNode(char);
             response.appendChild(content);
@@ -137,7 +152,12 @@ function App() {
   // };
 
   const restartGame = () => {
-    // insertConversation("test test test");
+    if (confirm("Would you like to save this conversation?")) {
+      // Save the conversation
+      // insertConversation("test test test");
+      downloadFile(JSON.stringify({ date: Date.now(), prompt: userQuery, response: responseRef.current }), (new Date()).toISOString());
+    }
+    responseRef.current = "";
     setGameFinished(false);
     setWaitingForQuery(true);
     setUserQuery("");
@@ -201,7 +221,7 @@ function App() {
         >
           <div className="bg-white/70 p-2">
             <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" className="fill-blue-950" viewBox="0 0 16 16">
-              <path fill-rule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
+              <path fillRule="evenodd" d="M8 3a5 5 0 1 1-4.546 2.914.5.5 0 0 0-.908-.417A6 6 0 1 0 8 2z"/>
               <path d="M8 4.466V.534a.25.25 0 0 0-.41-.192L5.23 2.308a.25.25 0 0 0 0 .384l2.36 1.966A.25.25 0 0 0 8 4.466"/>
             </svg>
           </div>
