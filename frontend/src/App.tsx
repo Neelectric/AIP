@@ -27,8 +27,8 @@ const downloadFile = (uriComponent: string | number | boolean, fileName: string)
 
 
 function App() {
-  const [gameFinished, setGameFinished] = useState(false);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [gameFinished, setGameFinished] = useState(false);
 
   const responseRef = useRef("");
 
@@ -54,11 +54,13 @@ function App() {
       
       if(data.type === "prompt") {
         if (loc === "inside") {
-          const query = document.getElementById("userQuery");
-          if (!query) return;
+          const queryLabel = document.getElementById("userQueryLabel")!;
+          queryLabel.innerText = "User Query: ";
+
+          const query = document.getElementById("userQuery")!;
           query.innerText = data.data;
-          const response = document.getElementById("response");
-          if (!response) return;
+
+          const response = document.getElementById("response")!;
           response.innerHTML = "";
         }
         else {
@@ -79,6 +81,10 @@ function App() {
         if (loc === "inside") {
           const response = document.getElementById("response");
           response!.innerHTML = "";
+          const queryLabel = document.getElementById("userQueryLabel")!;
+          queryLabel.innerText = "Waiting for user query...";
+          const query = document.getElementById("userQuery")!;
+          query.innerText = "";
         }
       }
       else if(data.type === "next_token") {
@@ -119,15 +125,16 @@ function App() {
         prevToken.current = token;
       }
       else if(data.type === "inside_choice") {
-        if (loc == 'inside') {
+        if (loc === "inside") {
           for (let i = 0; i < 5; i++){
-            const button = document.getElementById(`opt-${i}`);
-            if(!button)
-              continue;
-            var content = data.data[i].token;
+            const button = document.getElementById(`opt-${i}`) as HTMLButtonElement | undefined;
+            if (!button) continue;
+            let content = data.data[i].token;
             content += "<br></br>";
             content += Math.floor(data.data[i].prob * 100) + "%";
             button.innerHTML = content;
+            button.disabled = false;
+            button.onclick = () => choiceSelect(i + 1);
           }
         }
       }
@@ -139,7 +146,7 @@ function App() {
 
   // Handle outside
   const [waitingForQuery, setWaitingForQuery] = useState(true);
-  
+
   const [userQuery, setUserQuery] = useState("");
   const handleUserQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => setUserQuery(event.target.value);
 
@@ -174,6 +181,13 @@ function App() {
   // Handle inside
   const choiceSelect = (choice: number) => {
     ws.current?.send(JSON.stringify({ type: "choice", data: choice }));
+    // Empty the buttons
+    for (let i = 0; i < 5; i++){
+      const button = document.getElementById(`opt-${i}`) as HTMLButtonElement | undefined;
+      if (!button) continue;
+      button.innerHTML = "";
+      button.disabled = true;
+    }
   };
 
 
@@ -260,9 +274,9 @@ function App() {
           </button>
         </div>
       }
-      <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
+      <div className="flex flex-col items-center justify-between h-screen px-4 py-12 bg-black text-lime-600">
         <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
-          <h1 className="mr-2">User Query: </h1>
+          <h1 id="userQueryLabel" className="mr-2">Waiting for user query...</h1>
           <h2 id="userQuery"></h2>
         </div>
         <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
@@ -273,14 +287,18 @@ function App() {
               <span>...</span>
             }
           </div>
-          {!gameFinished && <img className="w-full px-[9.5%]" src="connectors.svg"></img>}
-          {!gameFinished && <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
-            <ul id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(1)}></ul>
-            <ul id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(2)}></ul>
-            <ul id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(3)}></ul>
-            <ul id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(4)}></ul>
-            <ul id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" onClick={() => choiceSelect(5)}></ul>
-          </div>}
+          { !gameFinished && 
+            <img className="w-full px-[9.5%]" src="connectors.svg" alt="Decorative connector lines" />
+          }
+          { !gameFinished &&
+            <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
+              <button id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
+              <button id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
+              <button id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
+              <button id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
+              <button id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
+            </div>
+          }
         </div>
         <div className="font-bold">
           {!gameFinished && <h3>Select the next word to continue the response</h3>}
