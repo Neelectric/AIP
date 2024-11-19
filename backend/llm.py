@@ -43,7 +43,7 @@ class LLM:
 
 	async def start_game(self, prompt: str, broadcast):
 		# Reset how much we are allowed to generate
-		self.max_new_tokens = 10
+		self.max_new_tokens = 500
 
 		messages = [
 			{"role": "system", "content": self.system_prompt},
@@ -55,6 +55,9 @@ class LLM:
 		self.input_ids = inputs["input_ids"]
 		self.num_tokens_input = self.input_ids.shape[-1]
 		self.attention_mask = inputs["attention_mask"]
+		self.top_1_threshold = 0.2
+		self.default_top_1_threshold = 0.2
+		self.threshold_increase = 0.02
 
 		# Generate a token at a time
 		while self.max_new_tokens > 0:
@@ -101,7 +104,9 @@ class LLM:
 		self.indices = torch.squeeze(indices)
 
 		# If highest probability is below 40% we branch
-		if topk[0] < 0.3:
+		if topk[0] < self.top_1_threshold:
+			print(f"top-1 probability was {topk[0]}, which is smaller than {self.top_1_threshold}. Branching and resetting to {self.default_top_1_threshold}")
+			self.top_1_threshold = self.default_top_1_threshold
 			# For each of the options, send the text, index, and probability back
 			# and save our progress in the game so we can pick up where we left off when we get input
 			choices = []
@@ -113,6 +118,8 @@ class LLM:
 			raise NeedHumanInputException
 		# Else just generate the next token
 		else:
+			print(f"top-1 probability was {topk[0]}, which is greater than {self.top_1_threshold}. We raise the threshold by {self.threshold_increase} and keep generating!")
+			self.top_1_threshold += self.threshold_increase
 			choice = self.indices[0]
 			await self.finish_iteration(choice, broadcast)
 
@@ -121,7 +128,14 @@ class LLM:
 		choice = choice.unsqueeze(dim=0).unsqueeze(dim=0) # This is quite ugly but we effectively need it to have shape [1,1]
 		self.input_ids = torch.cat((self.input_ids, choice), dim=1)
 		self.attention_mask = torch.ones(1, self.input_ids.shape[-1]).to(self.device)
-		# detokenized_current_text = self.tokenizer.decode(input_ids.squeeze()[self.num_tokens_input:])
-		detokenized = self.tokenizer.decode(int(choice))
-		await broadcast({ "type": "next_token", "data": detokenized })
+		detokenized_current_text = self.tokenizer.decode(self.input_ids.squeeze()[self.num_tokens_input:])
+		detokenized_choice = self.tokenizer.decode(int(choice))
+
+		print(detokenized_current_text)
+		if "<|eot_id|>" in detokenized_current_text:
+			await broadcast({ "type": "finish" })
+			self.max_new_tokens = 0
+			print("EOT was detected in output, ending generation...")
+		else:
+			await broadcast({ "type": "next_token", "data": detokenized_choice })
 		# yield self.tokenizer.decode(int(choice))
