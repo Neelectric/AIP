@@ -104,6 +104,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
                 prompt = input["data"]
                 await manager.broadcast({ "type": "prompt", "data": prompt })
                 await llm.start_game(prompt, manager.broadcast)
+            elif input["type"] == "reset_game":
+                await manager.broadcast({ "type": "reset" })
             else:
                 choice = int(input["data"])
                 await llm.continue_game_with_input(choice, manager.broadcast)

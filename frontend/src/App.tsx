@@ -28,6 +28,8 @@ const downloadFile = (uriComponent: string | number | boolean, fileName: string)
 
 function App() {
   const [gameFinished, setGameFinished] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+
   const responseRef = useRef("");
 
   const responseCounter = useRef(0);
@@ -36,8 +38,8 @@ function App() {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
-     ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
-    //ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
+    // ws.current = new WebSocket(`ws://127.0.0.1:5000/ws/${loc}`);
+    ws.current = new WebSocket(`wss://dashing-treefrog-actively.ngrok-free.app/ws/${loc}`);
 
     return () => {
       ws.current?.close();
@@ -51,7 +53,7 @@ function App() {
       const responses = document.getElementById("responses")!;
       
       if(data.type === "prompt") {
-        if (loc == 'inside') {
+        if (loc === "inside") {
           const query = document.getElementById("userQuery");
           if (!query) return;
           query.innerText = data.data;
@@ -68,10 +70,21 @@ function App() {
           responses.appendChild(response);
         }
       }
+      else if(data.type === "reset") {
+        responseRef.current = "";
+        setGameFinished(false);
+        setWaitingForQuery(true);
+        setUserQuery("");
+        setShowWelcome(true);
+        if (loc === "inside") {
+          const response = document.getElementById("response");
+          response!.innerHTML = "";
+        }
+      }
       else if(data.type === "next_token") {
         const token = data.data as string;
         let respID = "";
-        if(loc == 'inside'){
+        if(loc === "inside"){
           respID = 'response';
         }
         else {
@@ -82,9 +95,7 @@ function App() {
 
         if (token === "<|eot_id|>") {
           responseRef.current = responseRef.current.concat(token);
-          if (loc == 'inside'){
-
-          }
+          if (loc === "inside") { }
           else {
             responseCounter.current += 1;
             const response = document.createElement("li");
@@ -157,10 +168,7 @@ function App() {
       // insertConversation("test test test");
       downloadFile(JSON.stringify({ date: Date.now(), prompt: userQuery, response: responseRef.current }), (new Date()).toISOString());
     }
-    responseRef.current = "";
-    setGameFinished(false);
-    setWaitingForQuery(true);
-    setUserQuery("");
+    ws.current?.send(JSON.stringify({ type: "reset_game" }));
   };
 
   // Handle inside
@@ -208,7 +216,7 @@ function App() {
           { !waitingForQuery &&
             <div className="flex items-center p-6 border-t border-white/80">
               { !gameFinished &&
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="inline-block mr-4 animate-spin" viewBox="0 0 16 16">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="inline-block shrink-0 mr-4 animate-spin" viewBox="0 0 16 16">
                   <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
                 </svg>
               }
@@ -237,13 +245,21 @@ function App() {
     </div>
   ) : (
     <div>
-      <div className="absolute position-center flex flex-col justify-around p-8 text-center z-10 w-[90vw] h-[90vh] mx-[5vw] my-[5vh] bg-black bg-opacity-80 rounded-lg border-solid border-lime-500 border-2 text-lime-600 shadow-[0px_0px_30px_#65a30d]">
-        <h2 className="font-bold">Welcome</h2>
-        <p>Text generators respond to prompts by predicting the most likely next token, essentially building replies one word at a time. A bit of randomness, 
-          like choosing (sampling) from the top 5 words instead of the most likely one, keeps their answers interesting but also makes them less reliable.</p>
-        <p>Today, <span className="underline">you</span> get to be that random factor. See how much your choices steer the output, and decide
-        exactly how helpful you want EdinBot to be!</p>
-      </div>
+      { showWelcome &&
+        <div className="absolute position-center flex flex-col justify-around p-8 text-center z-10 w-[90vw] h-[90vh] mx-[5vw] my-[5vh] bg-black bg-opacity-90 rounded-lg border-solid border-lime-500 border-2 text-lime-600 shadow-[0px_0px_30px_#65a30d]">
+          <h2 className="font-bold">Welcome!</h2>
+          <p>Text generators respond to prompts by predicting the most likely next token, building replies one word at a time. A bit of randomness, 
+            like choosing (sampling) from the top 5 words instead of the most likely one, keeps their answers interesting but also makes them less reliable.</p>
+          <p>Today, <span className="underline">you</span> get to be that random factor. See how much your choices steer the output, and decide
+          exactly how helpful you want EdinBot to be!</p>
+          <button
+            className="w-fit mx-auto p-6 bg-lime-500 hover:bg-lime-400 active:bg-lime-700 rounded font-bold text-black uppercase"
+            onClick={() => setShowWelcome(false)}
+          >
+            Get started
+          </button>
+        </div>
+      }
       <div className="flex flex-col items-center justify-between h-screen p-4 bg-black text-lime-600">
         <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-lime-500 border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
           <h1 className="mr-2">User Query: </h1>
@@ -253,7 +269,9 @@ function App() {
           <div className="w-3/4 mb-4 p-4 border-2 border-lime-500 rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
             <h1 className="font-bold">Your Response:</h1>
             <span id="response"></span>
-            ...
+            { !gameFinished &&
+              <span>...</span>
+            }
           </div>
           {!gameFinished && <img className="w-full px-[9.5%]" src="connectors.svg"></img>}
           {!gameFinished && <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
