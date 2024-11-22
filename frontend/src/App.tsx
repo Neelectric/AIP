@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from "react";
-// import sql from "./db";
 
 
 type Loc = "outside" | "inside";
@@ -26,13 +25,14 @@ const downloadFile = (uriComponent: string | number | boolean, fileName: string)
 };
 
 
-function App() {
+const App = () => {
   const [showWelcome, setShowWelcome] = useState(true);
+  const [waitingForQuery, setWaitingForQuery] = useState(true);
   const [gameFinished, setGameFinished] = useState(false);
 
-  const responseRef = useRef("");
+  const [botResponse, setBotResponse] = useState("");
+  const addToBotResponse = (token: string) => setBotResponse(response => response + token);
 
-  const responseCounter = useRef(0);
   const prevToken = useRef("");
 
   const ws = useRef<WebSocket | null>(null);
@@ -50,37 +50,25 @@ function App() {
     if (!ws.current) return;
     ws.current.onmessage = event => {
       const data = JSON.parse(event.data) as Data;
-      const responses = document.getElementById("responses")!;
-      
+
       if(data.type === "prompt") {
+        setWaitingForQuery(false);
         if (loc === "inside") {
+          // Reset the query banner at the top of the page
           const queryLabel = document.getElementById("userQueryLabel")!;
           queryLabel.innerText = "User Query: ";
-
           const query = document.getElementById("userQuery")!;
           query.innerText = data.data;
-
-          const response = document.getElementById("response")!;
-          response.innerHTML = "";
-        }
-        else {
-          responseCounter.current += 1;
-          const response = document.createElement("li");
-          response.setAttribute("id", `response-${responseCounter.current}`);
-          // const responseContent = document.createTextNode(`EdinBot: `);
-          // response.appendChild(responseContent);
-          responses.appendChild(response);
         }
       }
       else if(data.type === "reset") {
-        responseRef.current = "";
+        // Reset the entire game
+        setBotResponse("");
         setGameFinished(false);
         setWaitingForQuery(true);
         setUserQuery("");
         setShowWelcome(true);
         if (loc === "inside") {
-          const response = document.getElementById("response");
-          response!.innerHTML = "";
           const queryLabel = document.getElementById("userQueryLabel")!;
           queryLabel.innerText = "Waiting for user query...";
           const query = document.getElementById("userQuery")!;
@@ -88,43 +76,29 @@ function App() {
         }
       }
       else if(data.type === "next_token") {
+        // Add the next token to the response
         const token = data.data as string;
-        let respID = "";
-        if(loc === "inside"){
-          respID = 'response';
-        }
-        else {
-          respID = `response-${responseCounter.current}`;
-        }
-        const response = document.getElementById(respID);
-        if(!response) return;
 
         if (token === "<|eot_id|>") {
-          responseRef.current = responseRef.current.concat(token);
-          if (loc === "inside") { }
-          else {
-            responseCounter.current += 1;
-            const response = document.createElement("li");
-            response.setAttribute("id", `response-${responseCounter.current}`);
-            responses.appendChild(response);
-          }
+          addToBotResponse("\n\n");
         }
         else if (
           token === "<|start_header_id|>" ||
           token === "<|end_header_id|>" ||
           (prevToken.current === "<|start_header_id|>" && token === "assistant")
-        ) {}
+        ) { /* Ignore these tokens and don't print anything */ }
         else {
-          responseRef.current = responseRef.current.concat(token);
           for (const char of token) {
-            const content = document.createTextNode(char);
-            response.appendChild(content);
+            // Doesn't work but would be nice if it were to actually stream character by character
+            // Currently this just displays word by word due to React state batching
+            addToBotResponse(char);
           }
         }
 
         prevToken.current = token;
       }
       else if(data.type === "inside_choice") {
+        // Update the interface to let the user choose
         if (loc === "inside") {
           for (let i = 0; i < 5; i++){
             const button = document.getElementById(`opt-${i}`) as HTMLButtonElement | undefined;
@@ -145,8 +119,6 @@ function App() {
   });
 
   // Handle outside
-  const [waitingForQuery, setWaitingForQuery] = useState(true);
-
   const [userQuery, setUserQuery] = useState("");
   const handleUserQueryChange = (event: React.ChangeEvent<HTMLInputElement>) => setUserQuery(event.target.value);
 
@@ -154,26 +126,12 @@ function App() {
     event.preventDefault();
     const input = document.getElementById("ask-input")! as HTMLInputElement;
     ws.current?.send(JSON.stringify({ type: "start_game", data: input.value}));
-    setWaitingForQuery(false);
   };
-
-  // const insertConversation = async (name: string) => {
-  //   const insertion = await sql`
-  //     insert into tests
-  //       (name)
-  //     values
-  //       (${name})
-  //     returning name
-  //   `;
-
-  //   return insertion;
-  // };
 
   const restartGame = () => {
     if (confirm("Would you like to save this conversation?")) {
       // Save the conversation
-      // insertConversation("test test test");
-      downloadFile(JSON.stringify({ date: Date.now(), prompt: userQuery, response: responseRef.current }), (new Date()).toISOString());
+      downloadFile(JSON.stringify({ date: Date.now(), prompt: userQuery, response: botResponse }), (new Date()).toISOString());
     }
     ws.current?.send(JSON.stringify({ type: "reset_game" }));
   };
@@ -182,7 +140,7 @@ function App() {
   const choiceSelect = (choice: number) => {
     ws.current?.send(JSON.stringify({ type: "choice", data: choice }));
     // Empty the buttons
-    for (let i = 0; i < 5; i++){
+    for (let i = 0; i < 5; i++) {
       const button = document.getElementById(`opt-${i}`) as HTMLButtonElement | undefined;
       if (!button) continue;
       button.innerHTML = "";
@@ -234,11 +192,11 @@ function App() {
                   <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
                 </svg>
               }
-              <ul
-                id="responses"
+              <p
                 className="text-xl space-y-2 max-h-[250px] flex flex-col-reverse overflow-y-auto"
               >
-              </ul>
+                { botResponse }
+              </p>
             </div>
           }
         </div>
@@ -259,54 +217,61 @@ function App() {
       }
   </>) : (
     <div>
+      {/* Welcome screen */}
       { showWelcome &&
         <div className="absolute position-center flex flex-col justify-around p-8 text-center z-10 w-[90vw] h-[90vh] mx-[5vw] my-[5vh] bg-[black] rounded-lg border-solid border-[#84cc16] border-2 text-[#65a30d] shadow-[0px_0px_30px_#65a30d]">
-          <h2 className="font-bold">Welcome!</h2>
-          <p>Text generators respond to prompts by predicting the most likely next token, building replies one word at a time. A bit of randomness, 
-            like choosing (sampling) from the top 5 words instead of the most likely one, keeps their answers interesting but also makes them less reliable.</p>
-          <p>Today, <span className="underline">you</span> get to be that random factor. See how much your choices steer the output, and decide
-          exactly how helpful you want EdinBot to be!</p>
+          <h2 className="font-bold text-2xl">
+            Welcome!
+          </h2>
+          <p className="text-xl">
+            Text generators respond to prompts by predicting the most likely next token, building replies one word at a time. A bit of randomness, like choosing (sampling) from the top 5 words instead of the most likely one, keeps their answers interesting but also makes them less reliable.
+          </p>
+          <p className="text-xl">
+            Today, <span className="underline">you</span> get to be that random factor. See how much your choices steer the output, and decide exactly how helpful you want EdinBot to be!
+          </p>
           <button
-            className="w-fit mx-auto p-6 bg-[#84cc16] hover:bg-[#a3e635] active:bg-[#4d7c0f] rounded font-bold text-[black] uppercase"
+            className="w-fit mx-auto p-6 bg-[#84cc16] hover:bg-[#a3e635] active:bg-[#4d7c0f] rounded font-bold text-[black] text-xl uppercase"
             onClick={() => setShowWelcome(false)}
           >
             Get started
           </button>
         </div>
       }
+      {/* Inside interface */}
       <div className="flex flex-col items-center justify-between h-screen px-4 py-12 bg-[black] text-[#65a30d]">
         <div className="flex flex-row justify-start margin-20 mb-4 text-lg font-bold border-solid border-[#84cc16] border-2 p-2 shadow-[4px_4px_0px_#65a30d]">
           <h1 id="userQueryLabel" className="mr-2">Waiting for user query...</h1>
           <h2 id="userQuery"></h2>
         </div>
-        <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
-          <div className="w-3/4 mb-4 p-4 border-2 border-[#84cc16] rounded-md max-h-[300px] max-w-[1100px] overflow-y-scroll">
-            <h1 className="font-bold">Your Response:</h1>
-            <span id="response"></span>
-            { !gameFinished &&
-              <span>...</span>
-            }
+        { !waitingForQuery && <>
+          <div className="flex flex-col items-center justify-center w-full max-w-[1100px]">
+            <h1 className="font-bold">Your response:</h1>
+            <p className="w-3/4 max-w-[1100px] max-h-[250px] p-4 flex flex-col-reverse border-2 border-[#84cc16] rounded-md overflow-y-auto">
+              { botResponse }
+              { !gameFinished &&
+                "..."
+              }
+            </p>
+            { !gameFinished && <>
+              <img className="w-full px-[9.5%]" src="connectors.svg" alt="Decorative connector lines" />
+              <div id="choices" className="w-full h-[116px] grid grid-cols-5 justify-items-center text-center text-lg">
+                { [0, 1, 2, 3, 4].map(no => (
+                  <button key={no} id={`opt-${no}`} className="h-fit cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
+                ))}
+              </div>
+            </>}
           </div>
-          { !gameFinished && 
-            <img className="w-full px-[9.5%]" src="connectors.svg" alt="Decorative connector lines" />
+        </>}
+        <h3 className="font-bold">
+          { gameFinished ?
+            "Response complete. Thanks for playing!"
+          :
+            "Select the next word to continue the response"
           }
-          { !gameFinished &&
-            <div id="choices" className="w-full grid grid-cols-5 justify-items-center text-center text-lg">
-              <button id="opt-0" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
-              <button id="opt-1" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
-              <button id="opt-2" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
-              <button id="opt-3" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
-              <button id="opt-4" className="cursor-pointer rounded-lg shadow-[0px_0px_20px_#65a30d] hover:font-bold m-2 p-2" disabled></button>
-            </div>
-          }
-        </div>
-        <div className="font-bold">
-          {!gameFinished && <h3>Select the next word to continue the response</h3>}
-          {gameFinished && <h3>Response complete. Thanks for playing!</h3>}
-        </div>
+        </h3>
       </div>
     </div>
   );
-}
+};
 
 export default App;
