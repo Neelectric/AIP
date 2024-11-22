@@ -34,12 +34,12 @@ model.generation_config.output_scores = True
 model.generation_config.output_logits = True
 model.generation_config.do_sample = False
 
-system_prompt = "You are a chatbot that is incredibly knowledgeable about Scotland."
+system_prompt = "You are a helpful chatbot."
 print(f"System prompt: {system_prompt}")
-# start_prompt = input("'What would you like to talk about?' ")
-start_prompt = " "
-if start_prompt == " ":
-   start_prompt = "Please tell me about George street."
+start_prompt = input("'What would you like to talk about?' ")
+# start_prompt = " "
+# if start_prompt == " ":
+#    start_prompt = "Please tell me about George street."
    
 
 messages = [
@@ -98,21 +98,21 @@ def manual(inputs=inputs):
     indices = torch.squeeze(indices)
 
     # if highest probability is below 40% we branch
-    if topk[0] < 0.4: 
-      print("-"*100)
-      for i, pair in enumerate(zip(topk, indices)):
-          prob, index = pair
-          detokenized = tokenizer.decode(index, skip_special_tokens=True)
-          prob*=100
-          print(f"{i+1}, {prob:.2f}%, {int(index)}, {detokenized}") #     
-      print("-"*100)
+    # if topk[0] < 0.4: 
+    print("-"*100)
+    for i, pair in enumerate(zip(topk, indices)):
+        prob, index = pair
+        detokenized = tokenizer.decode(index, skip_special_tokens=True)
+        prob*=100
+        print(f"{i+1}, {prob:.2f}%, {int(index)}, {detokenized}") #     
+    print("-"*100)
 
-      input_text = input("'Please add enter the number of the token you believe should come next:' ")
-      choice_index = int(input_text)-1
-      choice = indices[choice_index]
+    input_text = input("")
+    choice_index = int(input_text)-1
+    choice = indices[choice_index]
 
-    else:
-       choice = indices[0]
+    # else:
+    #    choice = indices[0]
     choice = choice.unsqueeze(dim=0).unsqueeze(dim=0) # this is quite ugly but we effectively need it to have shape [1,1]
     input_ids = torch.cat((input_ids, choice), dim=1)
     attention_mask = torch.ones(1, input_ids.shape[-1]).to(device)
