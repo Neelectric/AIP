@@ -192,7 +192,7 @@ function App() {
 
 
   // Render the interface
-  return loc === "outside" ? (
+  return loc === "outside" ? (<>
     <div className={`w-screen h-screen flex flex-col items-center justify-center bg-[url("/editomorrow.webp")] bg-center bg-cover bg-no-repeat bg-white/30 bg-blend-lighten`}>
       <img 
         src="./edinbot.webp"
@@ -228,24 +228,25 @@ function App() {
           </form>
           {/* Model output */}
           { !waitingForQuery &&
-            <div className="flex items-center p-6 border-t border-white/80">
+            <div className="flex p-6 border-t border-white/80">
               { !gameFinished &&
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="inline-block shrink-0 mr-4 animate-spin" viewBox="0 0 16 16">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" className="inline-block shrink-0 mt-px mr-4 animate-spin" viewBox="0 0 16 16">
                   <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
                 </svg>
               }
               <ul
                 id="responses"
-                className="text-xl space-y-2"
+                className="text-xl space-y-2 max-h-[250px] flex flex-col-reverse overflow-y-auto"
               >
               </ul>
             </div>
           }
         </div>
       </div>
-      { gameFinished &&
+    </div>
+    { gameFinished &&
         <button
-          className="mt-8 border border-white/80 backdrop-blur-3xl rounded-full shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff] active:shadow-[2px_2px_16px_#bebebe,-2px_-2px_16px_#ffffff] overflow-hidden transition-shadow"
+          className="absolute top-6 right-6 border border-white/80 backdrop-blur-3xl rounded-full shadow-[4px_4px_32px_#bebebe,-4px_-4px_32px_#ffffff] active:shadow-[2px_2px_16px_#bebebe,-2px_-2px_16px_#ffffff] overflow-hidden transition-shadow"
           onClick={restartGame}
         >
           <div className="bg-white/70 p-2">
@@ -256,8 +257,7 @@ function App() {
           </div>
         </button>
       }
-    </div>
-  ) : (
+  </>) : (
     <div>
       { showWelcome &&
         <div className="absolute position-center flex flex-col justify-around p-8 text-center z-10 w-[90vw] h-[90vh] mx-[5vw] my-[5vh] bg-[black] rounded-lg border-solid border-[#84cc16] border-2 text-[#65a30d] shadow-[0px_0px_30px_#65a30d]">
