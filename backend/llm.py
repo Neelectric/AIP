@@ -43,7 +43,7 @@ class LLM:
 
 	async def start_game(self, prompt: str, broadcast):
 		# Reset how much we are allowed to generate
-		self.max_new_tokens = 500
+		self.max_new_tokens = 150
 
 		messages = [
 			{"role": "system", "content": self.system_prompt},
@@ -93,7 +93,8 @@ class LLM:
 			max_new_tokens=1, 
 			do_sample=False, 
 			temperature=None, 
-			top_p=None
+			top_p=None,
+			exponential_decay_length_penalty=(self.max_new_tokens, 1.01),
 		) # is now of type GenerateDecoderOnlyOutput
 
 		# Softmax the scores and find the top-k tokens with their probabilities
