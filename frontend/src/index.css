@@ -12,3 +12,13 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+ol {
+  @apply list-decimal list-outside;
+  padding-inline-start: 40px;
+}
+
+ul {
+  @apply list-disc list-outside;
+  padding-inline-start: 40px;
+}
