@@ -34,7 +34,7 @@ model.generation_config.output_scores = True
 model.generation_config.output_logits = True
 model.generation_config.do_sample = False
 
-system_prompt = "You are a helpful chatbot."
+system_prompt = "You are a chatbot named EdinBot. You're very knowledgeable about Edinburgh and give short responses to user queries."
 print(f"System prompt: {system_prompt}")
 start_prompt = input("'What would you like to talk about?' ")
 # start_prompt = " "
